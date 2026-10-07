@@ -1,0 +1,17 @@
+# Go
+app/bin/
+app/internal/platform/webui/dist/*
+!app/internal/platform/webui/dist/.gitkeep
+*.test
+coverage.out
+
+# Web
+web/node_modules/
+web/dist/
+web/test-results/
+web/playwright-report/
+
+# Tooling
+.task/
+.env
+__pycache__/
