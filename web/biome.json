@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "files": {
+    "includes": [
+      "**",
+      "!node_modules",
+      "!dist",
+      "!src/routeTree.gen.ts",
+      "!test-results",
+      "!playwright-report"
+    ]
+  },
+  "formatter": { "indentStyle": "space", "lineWidth": 110 },
+  "linter": { "rules": { "preset": "recommended" } },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } }
+}

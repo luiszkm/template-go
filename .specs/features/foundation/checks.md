@@ -108,7 +108,7 @@ Proof: `task gen:sqlc:check`
 Proof: `go -C app test ./archtest -run '^TestGenCheck_OpenAPIDriftFails$'`
 Proof: `task gen:openapi:check`
 
-**C29** - With `web/src/api/schema.d.ts` edited in a temp copy, `npm run gen:check` exits non-zero; on the committed tree it exits `0` (FND-03, AC 22)
+**C29** - With `web/src/api/schema.d.ts` edited in a temp copy, `npm run gen:check` exits non-zero; on the committed tree it exits `0` (FND-03, AC 22) `[done]`
 Proof: `npm --prefix web run test -- src/api/genCheck.test.ts -t "drift fails"`
 Proof: `npm --prefix web run gen:check`
 
@@ -143,19 +143,19 @@ Proof: `go -C app test ./cmd/newslice -run '^TestGenerate_RejectsInvalidNames$'`
 
 ### S5 - Web shell · ~20 files · ~45 KB · ~12k
 
-**C39** - When `GET /readyz` resolves `200`, `/` shows the text `API: online` (FND-05, AC 30)
+**C39** - When `GET /readyz` resolves `200`, `/` shows the text `API: online` (FND-05, AC 30) `[done]`
 Proof: `npm --prefix web run test -- src/features/status/ApiStatus.test.tsx -t "online"`
 
-**C40** - When `GET /readyz` resolves `503`, and separately when it rejects with a network error, `/` shows `API: offline` and a button named `Tentar novamente` (FND-05, AC 31)
+**C40** - When `GET /readyz` resolves `503`, and separately when it rejects with a network error, `/` shows `API: offline` and a button named `Tentar novamente` (FND-05, AC 31) `[done]`
 Proof: `npm --prefix web run test -- src/features/status/ApiStatus.test.tsx -t "offline"`
 
-**C41** - Clicking `Tentar novamente` issues a second `GET /readyz` (request count goes from 1 to 2) (FND-05, AC 32)
+**C41** - Clicking `Tentar novamente` issues a second `GET /readyz` (request count goes from 1 to 2) (FND-05, AC 32) `[done]`
 Proof: `npm --prefix web run test -- src/features/status/ApiStatus.test.tsx -t "retry"`
 
-**C42** - While `GET /readyz` is unresolved, an element with `role="status"` is present, and it is gone after resolution (FND-05, AC 33)
+**C42** - While `GET /readyz` is unresolved, an element with `role="status"` is present, and it is gone after resolution (FND-05, AC 33) `[done]`
 Proof: `npm --prefix web run test -- src/features/status/ApiStatus.test.tsx -t "pending"`
 
-**C43** - Navigating to `/nao-existe` shows `Página não encontrada` and a link whose `href` is `/` (FND-05, AC 34)
+**C43** - Navigating to `/nao-existe` shows `Página não encontrada` and a link whose `href` is `/` (FND-05, AC 34) `[done]`
 Proof: `npm --prefix web run test -- src/routes/notFound.test.tsx -t "not found"`
 
 **C44** - The `webui` handler returns `200` with the bytes of `index.html` for `GET /users/42` when no such file exists (FND-05, AC 35, door 9) `[done]`
@@ -167,10 +167,10 @@ Proof: `go -C app test ./internal/platform/webui -run '^TestHandler_ServesStatic
 **C46** - In the assembled server, `GET /api/x`, `GET /healthz` and `GET /readyz` are never answered with `index.html` (FND-05, AC 35, AC 9) `[done]`
 Proof: `go -C app test ./internal/app -run '^TestRouting_APIAndHealthNotSwallowedBySPA$'`
 
-**C47** - No file under `web/src` outside `web/src/api/` calls `fetch(`, imports `axios`, or constructs `XMLHttpRequest` (FND-05, AC 36)
+**C47** - No file under `web/src` outside `web/src/api/` calls `fetch(`, imports `axios`, or constructs `XMLHttpRequest` (FND-05, AC 36) `[done]`
 Proof: `npm --prefix web run test -- src/api/boundary.test.ts -t "only generated client"`
 
-**C48** - The Vite dev server proxies `/api`, `/healthz` and `/readyz` to `http://localhost:8080` (door 9)
+**C48** - The Vite dev server proxies `/api`, `/healthz` and `/readyz` to `http://localhost:8080` (door 9) `[done]`
 Proof: `npm --prefix web run test -- vite.config.test.ts -t "proxies backend paths"`
 
 **C49** - Against the running stack (`task e2e` starts it), Playwright opens `/` and sees `API: online` (FND-05, AC 30)
