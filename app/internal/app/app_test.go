@@ -109,7 +109,7 @@ func TestRun_ShutdownDrainsInFlight(t *testing.T) {
 			status <- -1
 			return
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		status <- resp.StatusCode
 	}()
 	<-entered
@@ -120,7 +120,7 @@ func TestRun_ShutdownDrainsInFlight(t *testing.T) {
 		if err != nil {
 			return true
 		}
-		c.Close()
+		_ = c.Close()
 		return false
 	}, 3*time.Second, 50*time.Millisecond, "new connections must be refused during shutdown")
 
@@ -150,7 +150,7 @@ func TestRun_ShutdownTimeoutBoundsDrain(t *testing.T) {
 	go func() {
 		resp, err := http.Get("http://" + ln.Addr().String() + "/stuck")
 		if err == nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}
 	}()
 	<-entered

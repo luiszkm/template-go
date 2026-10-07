@@ -100,11 +100,11 @@ Proof: `go -C app test ./archtest -run '^TestImports_AllowsSameFeatureAndComposi
 **C26** - archtest reports no violation on the real `app` module (FND-03, AC 18, AC 19) `[done]`
 Proof: `go -C app test ./archtest -run '^TestImports_RepositoryIsClean$'`
 
-**C27** - With one sqlc-generated file edited in a temp copy, `task gen:sqlc:check` exits non-zero; on the committed tree it exits `0` (FND-03, AC 20)
+**C27** - With one sqlc-generated file edited in a temp copy, `task gen:sqlc:check` exits non-zero; on the committed tree it exits `0` (FND-03, AC 20) `[done]`
 Proof: `go -C app test ./archtest -run '^TestGenCheck_SqlcDriftFails$'`
 Proof: `task gen:sqlc:check`
 
-**C28** - With `app/openapi.json` edited in a temp copy, `task gen:openapi:check` exits non-zero; on the committed tree it exits `0` (FND-03, AC 21)
+**C28** - With `app/openapi.json` edited in a temp copy, `task gen:openapi:check` exits non-zero; on the committed tree it exits `0` (FND-03, AC 21) `[done]`
 Proof: `go -C app test ./archtest -run '^TestGenCheck_OpenAPIDriftFails$'`
 Proof: `task gen:openapi:check`
 
@@ -112,33 +112,33 @@ Proof: `task gen:openapi:check`
 Proof: `npm --prefix web run test -- src/api/genCheck.test.ts -t "drift fails"`
 Proof: `npm --prefix web run gen:check`
 
-**C30** - The `check` task in `Taskfile.yml` invokes all 8 steps - format check, golangci-lint, generated-code diffs, archtest, `go test`, web typecheck, web lint, web unit tests - as sequential `cmds` (Task stops at the first non-zero) (FND-03, AC 23)
+**C30** - The `check` task in `Taskfile.yml` invokes all 8 steps - format check, golangci-lint, generated-code diffs, archtest, `go test`, web typecheck, web lint, web unit tests - as sequential `cmds` (Task stops at the first non-zero) (FND-03, AC 23) `[done]`
 Proof: `go -C app test ./archtest -run '^TestTaskfile_CheckRunsAllSteps$'`
 
-**C31** - `app/go.mod` declares module `github.com/luiszkm/template-go`; `app/tools/go.mod` declares `tool` directives for `sqlc`, `goose` and `golangci-lint`; there is no `go.mod` at the repository root (door 1, door 13 - amended with user approval 2026-10-07)
+**C31** - `app/go.mod` declares module `github.com/luiszkm/template-go`; `app/tools/go.mod` declares `tool` directives for `sqlc`, `goose` and `golangci-lint`; there is no `go.mod` at the repository root (door 1, door 13 - amended with user approval 2026-10-07) `[done]`
 Proof: `go -C app test ./archtest -run '^TestModuleLayout$'`
 
-**C32** - `app/go.mod` requires `huma/v2`, `pgx/v5`, `goose/v3`, `caarlos0/env`, `testify`, `testcontainers-go`, `otel`; `web/package.json` lists `react` 19, `vite`, `@tanstack/react-router`, `@tanstack/react-query`, `tailwindcss` 4, `zod`, `react-hook-form`, `openapi-typescript`, `openapi-fetch`, `vitest`, `@testing-library/react`, `@playwright/test`, `@biomejs/biome` (door 10)
+**C32** - `app/go.mod` requires `huma/v2`, `pgx/v5`, `goose/v3`, `caarlos0/env`, `testify`, `testcontainers-go`, `otel`; `web/package.json` lists `react` 19, `vite`, `@tanstack/react-router`, `@tanstack/react-query`, `tailwindcss` 4, `zod`, `react-hook-form`, `openapi-typescript`, `openapi-fetch`, `vitest`, `@testing-library/react`, `@playwright/test`, `@biomejs/biome` (door 10) `[done]`
 Proof: `go -C app test ./archtest -run '^TestDependencies_Declared$'`
 
 ### S4 - Gerador de slice · ~8 files · ~30 KB · ~8k
 
-**C33** - `newslice --feature users --name create_user` on an existing feature creates `features/users/create_user/{endpoint.go,queries.sql,create_user_test.go}`, adds the slice to `features/users/register.go`, and adds one `sqlc.yaml` entry (FND-04, AC 24, door 6)
+**C33** - `newslice --feature users --name create_user` on an existing feature creates `features/users/create_user/{endpoint.go,queries.sql,create_user_test.go}`, adds the slice to `features/users/register.go`, and adds one `sqlc.yaml` entry (FND-04, AC 24, door 6) `[done]`
 Proof: `go -C app test ./cmd/newslice -run '^TestGenerate_CreatesSliceAndRegisters$'`
 
-**C34** - `newslice` for a feature with no folder creates `features/<f>/register.go` and adds the feature to `features/registry.go` (FND-04, AC 27)
+**C34** - `newslice` for a feature with no folder creates `features/<f>/register.go` and adds the feature to `features/registry.go` (FND-04, AC 27) `[done]`
 Proof: `go -C app test ./cmd/newslice -run '^TestGenerate_NewFeatureRegistersFeature$'`
 
-**C35** - In a temp copy of the repo, after `task new:slice FEATURE=demo NAME=get_thing`, `task check` exits `0` (FND-04, AC 25)
+**C35** - In a temp copy of the repo, after `task new:slice FEATURE=demo NAME=get_thing`, `task check` exits `0` (FND-04, AC 25) `[done]`
 Proof: `go -C app test ./cmd/newslice -run '^TestGenerated_TaskCheckPasses$'`
 
-**C36** - The generated endpoint is registered at a path starting `/api/v1/demo/`, answers `501` `application/problem+json`, and the generated test file contains an assertion on `501` that passes (FND-04, AC 26, door 2)
+**C36** - The generated endpoint is registered at a path starting `/api/v1/demo/`, answers `501` `application/problem+json`, and the generated test file contains an assertion on `501` that passes (FND-04, AC 26, door 2) `[done]`
 Proof: `go -C app test ./cmd/newslice -run '^TestGenerated_SliceAnswers501$'`
 
-**C37** - When the slice folder already exists, `newslice` exits non-zero and the SHA-256 of every file under `app/` is unchanged (FND-04, AC 28)
+**C37** - When the slice folder already exists, `newslice` exits non-zero and the SHA-256 of every file under `app/` is unchanged (FND-04, AC 28) `[done]`
 Proof: `go -C app test ./cmd/newslice -run '^TestGenerate_RefusesExistingSlice$'`
 
-**C38** - Each invalid input - `FEATURE=Users`, `FEATURE=1x`, `NAME=a-b`, `NAME=` (empty) - makes `newslice` exit non-zero and create no file (FND-04, AC 29)
+**C38** - Each invalid input - `FEATURE=Users`, `FEATURE=1x`, `NAME=a-b`, `NAME=` (empty) - makes `newslice` exit non-zero and create no file (FND-04, AC 29) `[done]`
 Proof: `go -C app test ./cmd/newslice -run '^TestGenerate_RejectsInvalidNames$'`
 
 ### S5 - Web shell · ~20 files · ~45 KB · ~12k
@@ -173,27 +173,27 @@ Proof: `npm --prefix web run test -- src/api/boundary.test.ts -t "only generated
 **C48** - The Vite dev server proxies `/api`, `/healthz` and `/readyz` to `http://localhost:8080` (door 9) `[done]`
 Proof: `npm --prefix web run test -- vite.config.test.ts -t "proxies backend paths"`
 
-**C49** - Against the running stack (`task e2e` starts it), Playwright opens `/` and sees `API: online` (FND-05, AC 30)
+**C49** - Against the running stack (`task e2e` starts it), Playwright opens `/` and sees `API: online` (FND-05, AC 30) `[done]`
 Proof: `task e2e -- -g "api online"`
 
 ### S6 - Harness para agentes · ~8 files · ~15 KB · ~4k
 
-**C50** - Fed a PostToolUse payload for an edited `.go` file with bad formatting, the gofmt hook rewrites it to `gofmt` output and exits `0`; for a `.ts` file it changes nothing and exits `0` (FND-06, AC 37)
+**C50** - Fed a PostToolUse payload for an edited `.go` file with bad formatting, the gofmt hook rewrites it to `gofmt` output and exits `0`; for a `.ts` file it changes nothing and exits `0` (FND-06, AC 37) `[done]`
 Proof: `go -C app test ./cmd/agenthooks -run '^TestGofmtHook$'`
 
-**C51** - Fed a Stop payload with `stop_hook_active: false` and a failing `task check:fast`, the Stop hook exits `2` with the failing output on stderr; with a passing command it exits `0`; with `stop_hook_active: true` it exits `0` without running the command (FND-06, AC 38)
+**C51** - Fed a Stop payload with `stop_hook_active: false` and a failing `task check:fast`, the Stop hook exits `2` with the failing output on stderr; with a passing command it exits `0`; with `stop_hook_active: true` it exits `0` without running the command (FND-06, AC 38) `[done]`
 Proof: `go -C app test ./cmd/agenthooks -run '^TestStopHook$'`
 
-**C52** - `.claude/settings.json` wires `PostToolUse` (matcher `Edit|Write|MultiEdit`) to the gofmt hook and `Stop` to the stop hook (FND-06, AC 37, AC 38)
+**C52** - `.claude/settings.json` wires `PostToolUse` (matcher `Edit|Write|MultiEdit`) to the gofmt hook and `Stop` to the stop hook (FND-06, AC 37, AC 38) `[done]`
 Proof: `go -C app test ./archtest -run '^TestClaudeSettings_WiresHooks$'`
 
-**C53** - `.cursor/rules/agents.mdc` has front-matter `alwaysApply: true` and `.windsurf/rules/agents.md` has `trigger: always_on`, and both bodies reference `AGENTS.md` (FND-06, AC 39)
+**C53** - `.cursor/rules/agents.mdc` has front-matter `alwaysApply: true` and `.windsurf/rules/agents.md` has `trigger: always_on`, and both bodies reference `AGENTS.md` (FND-06, AC 39) `[done]`
 Proof: `go -C app test ./archtest -run '^TestAgentRuleFiles$'`
 
-**C54** - `.github/workflows/ci.yml` has a job whose steps run `task check` and `task e2e`, with no `continue-on-error: true` (FND-06, AC 40)
+**C54** - `.github/workflows/ci.yml` has a job whose steps run `task check` and `task e2e`, with no `continue-on-error: true` (FND-06, AC 40) `[done]`
 Proof: `go -C app test ./archtest -run '^TestCIWorkflow_RunsCheckAndE2E$'`
 
-**C55** - `task check:fast` runs format check, `go vet`, archtest and web typecheck, and exits non-zero when any fails (FND-06, AC 38)
+**C55** - `task check:fast` runs format check, `go vet`, archtest and web typecheck, and exits non-zero when any fails (FND-06, AC 38) `[done]`
 Proof: `go -C app test ./archtest -run '^TestTaskfile_CheckFastSteps$'`
 
 ## Coverage

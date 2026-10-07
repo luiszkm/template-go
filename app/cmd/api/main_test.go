@@ -65,7 +65,7 @@ func gooseVersion(t *testing.T, url string) int64 {
 	t.Helper()
 	db, err := sql.Open("pgx", url)
 	require.NoError(t, err)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	var v int64
 	require.NoError(t, db.QueryRow(`SELECT max(version_id) FROM goose_db_version`).Scan(&v))
 	return v
@@ -95,7 +95,7 @@ func TestMigrateUp_RerunIsNoop(t *testing.T) {
 
 	db, err := sql.Open("pgx", pg.URL)
 	require.NoError(t, err)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	var rowsBefore int
 	require.NoError(t, db.QueryRow(`SELECT count(*) FROM goose_db_version`).Scan(&rowsBefore))
 
@@ -122,7 +122,7 @@ func TestServe_DoesNotMigrate(t *testing.T) {
 
 	db, err := sql.Open("pgx", pg.URL)
 	require.NoError(t, err)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	var exists bool
 	require.NoError(t, db.QueryRow(`SELECT to_regclass('public.goose_db_version') IS NOT NULL`).Scan(&exists))
 	require.False(t, exists)

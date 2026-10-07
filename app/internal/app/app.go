@@ -16,6 +16,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/luiszkm/template-go/internal/features"
 	"github.com/luiszkm/template-go/internal/platform/deps"
@@ -64,7 +65,8 @@ func New(o Options) (http.Handler, error) {
 
 	mux.Handle("/api/", httpx.NotFound())
 	mux.Handle("/", webui.Handler(o.Web))
-	return httpx.Chain(mux, o.Logger), nil
+	// Spans go to the global OpenTelemetry provider (no-op until one is installed).
+	return otelhttp.NewHandler(httpx.Chain(mux, o.Logger), "http"), nil
 }
 
 // OpenAPI returns the contract exactly as GET /api/openapi.json serves it.

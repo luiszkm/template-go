@@ -36,6 +36,19 @@ by reading the implementation.
 
 ## Workflow
 
+Commands (all from the repository root):
+
+| Command | What it does |
+| --- | --- |
+| `task dev` | Postgres in Docker + migrations, API on :8080, Vite on :5173 |
+| `task new:slice FEATURE=<f> NAME=<n>` | scaffold a slice (endpoint answering 501, `queries.sql`, test) and regenerate code |
+| `task gen` | regenerate sqlc code, `app/openapi.json` and `web/src/api/schema.d.ts` |
+| `task check` | the gate: format, lint, generated-code drift, archtest, Go tests, web typecheck/lint/tests |
+| `task e2e` | Playwright against the built binary |
+
+A slice declares its own permission in `endpoint.go` (`const permission op.Permission = "<feature>:<action>"`);
+there is no central permission list.
+
 - Start a new use case with `task new:slice FEATURE=<feature> NAME=<slice>`.
 - Before declaring work done: `task check` must pass. Never weaken, skip or delete a test to make it pass.
 - `git push`, deploys and production data changes need explicit approval.

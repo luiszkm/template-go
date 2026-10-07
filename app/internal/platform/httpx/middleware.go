@@ -3,6 +3,7 @@ package httpx
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -85,11 +86,11 @@ func Recover(next http.Handler, log *slog.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			v := recover()
-			if v == nil || v == http.ErrAbortHandler {
-				if v != nil {
-					panic(v)
-				}
+			if v == nil {
 				return
+			}
+			if err, ok := v.(error); ok && errors.Is(err, http.ErrAbortHandler) {
+				panic(v) // let net/http abort the response as intended
 			}
 			log.LogAttrs(r.Context(), slog.LevelError, "panic",
 				slog.String("request_id", RequestIDFrom(r.Context())),

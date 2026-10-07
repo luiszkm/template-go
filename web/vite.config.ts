@@ -26,7 +26,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: true,
-    setupFiles: ["./src/test/setup.ts"],
+    setupFiles: [path.resolve(import.meta.dirname, "src/test/setup.ts")],
     include: ["src/**/*.test.{ts,tsx}", "vite.config.test.ts"],
   },
 });

@@ -179,7 +179,7 @@ Requisição HTTP:
 
 Gerador e gate:
 
-6. `task new:slice` -> `app/cmd/newslice` (new, door 6) - valida nomes, escreve slice, `register.go`, entrada no `sqlc.yaml`, regenera sqlc e OpenAPI
+6. `task new:slice` -> `app/cmd/newslice` (new, door 6) - valida nomes, escreve slice, `register.go`, entrada no `sqlc.yaml`; em seguida `task gen` regenera sqlc, `app/openapi.json` e os tipos do web
 7. `task check` -> `app/archtest` (new, door 7), golangci-lint, diffs de gerados, testes Go e web; sai não-zero na primeira falha
 
 ## Relations

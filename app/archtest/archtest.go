@@ -28,7 +28,7 @@ func CheckImports(dir string) ([]string, error) {
 	var violations []string
 	for _, p := range pkgs {
 		if len(p.Errors) > 0 {
-			return nil, fmt.Errorf("archtest: load %s: %v", p.PkgPath, p.Errors[0])
+			return nil, fmt.Errorf("archtest: load %s: %w", p.PkgPath, p.Errors[0])
 		}
 		if p.Module == nil {
 			continue

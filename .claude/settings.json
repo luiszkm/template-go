@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "go -C \"$CLAUDE_PROJECT_DIR/app\" run ./cmd/agenthooks gofmt"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "go -C \"$CLAUDE_PROJECT_DIR/app\" run ./cmd/agenthooks stop",
+            "timeout": 300
+          }
+        ]
+      }
+    ]
+  }
+}
