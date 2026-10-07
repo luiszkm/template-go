@@ -1,0 +1,22 @@
+// Package config loads process configuration from environment variables.
+package config
+
+import (
+	"time"
+
+	"github.com/caarlos0/env/v11"
+)
+
+// Config is the whole runtime configuration. Every field comes from the environment.
+type Config struct {
+	DatabaseURL     string        `env:"DATABASE_URL,required,notEmpty"`
+	HTTPAddr        string        `env:"HTTP_ADDR" envDefault:":8080"`
+	ShutdownTimeout time.Duration `env:"SHUTDOWN_TIMEOUT" envDefault:"10s"`
+	ReadyTimeout    time.Duration `env:"READY_TIMEOUT" envDefault:"2s"`
+	LogLevel        string        `env:"LOG_LEVEL" envDefault:"info"`
+}
+
+// Load parses the given environment (as returned by env.ToMap(os.Environ())).
+func Load(environ map[string]string) (Config, error) {
+	return env.ParseAsWithOptions[Config](env.Options{Environment: environ})
+}

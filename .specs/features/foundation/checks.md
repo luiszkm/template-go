@@ -15,89 +15,89 @@ Testes que precisam de Postgres usam testcontainers-go e exigem Docker.
 
 ### S1 - O backend sobe, responde saúde e migra · ~12 files · ~40 KB · ~10k
 
-**C1** - `GET /healthz` returns `200` with body `{"status":"ok"}` when the database pool is closed (FND-01, AC 1)
+**C1** - `GET /healthz` returns `200` with body `{"status":"ok"}` when the database pool is closed (FND-01, AC 1) `[done]`
 Proof: `go -C app test ./internal/platform/health -run '^TestHealthz_OKWithoutDatabase$'`
 
-**C2** - `GET /readyz` returns `200` with body `{"status":"ready"}` against a live Postgres (FND-01, AC 2)
+**C2** - `GET /readyz` returns `200` with body `{"status":"ready"}` against a live Postgres (FND-01, AC 2) `[done]`
 Proof: `go -C app test ./internal/platform/health -run '^TestReadyz_ReadyWhenDatabaseAnswers$'`
 
-**C3** - `GET /readyz` returns `503` with content type `application/problem+json` when the database is stopped, and answers within 3 seconds (FND-01, AC 3)
+**C3** - `GET /readyz` returns `503` with content type `application/problem+json` when the database is stopped, and answers within 3 seconds (FND-01, AC 3) `[done]`
 Proof: `go -C app test ./internal/platform/health -run '^TestReadyz_503WhenDatabaseDown$'`
 
-**C4** - Running the built `api serve` binary with `DATABASE_URL` unset exits with code `1` and stderr contains `DATABASE_URL` (FND-01, AC 4)
+**C4** - Running the built `api serve` binary with `DATABASE_URL` unset exits with code `1` and stderr contains `DATABASE_URL` (FND-01, AC 4) `[done]`
 Proof: `go -C app test ./cmd/api -run '^TestServe_MissingDatabaseURLExits1$'`
 
-**C5** - Cancelling the serve context while a request is in flight lets that request finish with `200`, refuses a new connection, and returns `nil` (exit `0`) (FND-01, AC 5)
+**C5** - Cancelling the serve context while a request is in flight lets that request finish with `200`, refuses a new connection, and returns `nil` (exit `0`) (FND-01, AC 5) `[done]`
 Proof: `go -C app test ./internal/app -run '^TestRun_ShutdownDrainsInFlight$'`
 
-**C6** - The shutdown drain is bounded: the default timeout is exactly `10s`, and a handler blocking longer than the configured timeout does not keep `Run` from returning (FND-01, AC 5)
+**C6** - The shutdown drain is bounded: the default timeout is exactly `10s`, and a handler blocking longer than the configured timeout does not keep `Run` from returning (FND-01, AC 5) `[done]`
 Proof: `go -C app test ./internal/platform/config -run '^TestDefaults_ShutdownTimeoutIs10s$'`
 Proof: `go -C app test ./internal/app -run '^TestRun_ShutdownTimeoutBoundsDrain$'`
 
-**C7** - `api migrate up` on an empty database applies every file in `app/migrations` (goose version equals the newest file's version) and exits `0` (FND-01, AC 6)
+**C7** - `api migrate up` on an empty database applies every file in `app/migrations` (goose version equals the newest file's version) and exits `0` (FND-01, AC 6) `[done]`
 Proof: `go -C app test ./cmd/api -run '^TestMigrateUp_AppliesPending$'`
 
-**C8** - A second `api migrate up` applies nothing (goose version unchanged) and exits `0` (FND-01, AC 7)
+**C8** - A second `api migrate up` applies nothing (goose version unchanged) and exits `0` (FND-01, AC 7) `[done]`
 Proof: `go -C app test ./cmd/api -run '^TestMigrateUp_RerunIsNoop$'`
 
-**C9** - `api serve` against an empty database creates no `goose_db_version` table (door 8)
+**C9** - `api serve` against an empty database creates no `goose_db_version` table (door 8) `[done]`
 Proof: `go -C app test ./cmd/api -run '^TestServe_DoesNotMigrate$'`
 
-**C10** - A migration file not matching `^\d{14}_[a-z0-9_]+\.sql$` makes archtest fail naming the file; the real `app/migrations` passes (door 8)
+**C10** - A migration file not matching `^\d{14}_[a-z0-9_]+\.sql$` makes archtest fail naming the file; the real `app/migrations` passes (door 8) `[done]`
 Proof: `go -C app test ./archtest -run '^TestMigrationNames_RejectsNonTimestamp$'`
 Proof: `go -C app test ./archtest -run '^TestMigrationNames_RepositoryIsClean$'`
 
 ### S2 - Contrato HTTP compartilhado · ~10 files · ~35 KB · ~9k
 
-**C11** - Error responses for `404`, `500` and `503` each carry content type `application/problem+json` and the fields `type`, `title`, `status`, `detail`, `request_id`, with `request_id` equal to the `X-Request-ID` response header (FND-02, AC 8)
+**C11** - Error responses for `404`, `500` and `503` each carry content type `application/problem+json` and the fields `type`, `title`, `status`, `detail`, `request_id`, with `request_id` equal to the `X-Request-ID` response header (FND-02, AC 8) `[done]`
 Proof: `go -C app test ./internal/platform/httpx -run '^TestProblem_HasRequiredFields$'`
 
-**C12** - `GET /api/does-not-exist` returns `404` with an `application/problem+json` body (FND-02, AC 9)
+**C12** - `GET /api/does-not-exist` returns `404` with an `application/problem+json` body (FND-02, AC 9) `[done]`
 Proof: `go -C app test ./internal/app -run '^TestRouting_UnknownAPIPathIs404Problem$'`
 
-**C13** - A panicking handler yields `500` `application/problem+json` whose `detail` contains neither `goroutine` nor `.go:` (FND-02, AC 10)
+**C13** - A panicking handler yields `500` `application/problem+json` whose `detail` contains neither `goroutine` nor `.go:` (FND-02, AC 10) `[done]`
 Proof: `go -C app test ./internal/platform/httpx -run '^TestRecover_500WithoutStack$'`
 
-**C14** - A panicking handler produces exactly one log entry at level `ERROR` whose `request_id` equals the response `X-Request-ID` (FND-02, AC 11)
+**C14** - A panicking handler produces exactly one log entry at level `ERROR` whose `request_id` equals the response `X-Request-ID` (FND-02, AC 11) `[done]`
 Proof: `go -C app test ./internal/platform/httpx -run '^TestRecover_LogsErrorWithRequestID$'`
 
-**C15** - A request with `X-Request-ID: abc-123` gets `X-Request-ID: abc-123` back (FND-02, AC 12)
+**C15** - A request with `X-Request-ID: abc-123` gets `X-Request-ID: abc-123` back (FND-02, AC 12) `[done]`
 Proof: `go -C app test ./internal/platform/httpx -run '^TestRequestID_EchoesIncoming$'`
 
-**C16** - A request with no `X-Request-ID` gets a response header that parses as a UUID, distinct across two requests (FND-02, AC 13)
+**C16** - A request with no `X-Request-ID` gets a response header that parses as a UUID, distinct across two requests (FND-02, AC 13) `[done]`
 Proof: `go -C app test ./internal/platform/httpx -run '^TestRequestID_GeneratesUUID$'`
 
-**C17** - Each request writes one JSON log line containing all 8 keys `time`, `level`, `msg`, `request_id`, `method`, `path`, `status`, `duration_ms` (FND-02, AC 14)
+**C17** - Each request writes one JSON log line containing all 8 keys `time`, `level`, `msg`, `request_id`, `method`, `path`, `status`, `duration_ms` (FND-02, AC 14) `[done]`
 Proof: `go -C app test ./internal/platform/httpx -run '^TestAccessLog_HasAllKeys$'`
 
-**C18** - `GET /api/openapi.json` returns `200` with a body byte-identical to `app/openapi.json` and `openapi` field starting with `3.1` (FND-02, AC 15)
+**C18** - `GET /api/openapi.json` returns `200` with a body byte-identical to `app/openapi.json` and `openapi` field starting with `3.1` (FND-02, AC 15) `[done]`
 Proof: `go -C app test ./internal/app -run '^TestOpenAPI_ServedMatchesCommitted$'`
 
-**C19** - Registering a spec with empty `Permission` and `Public: false` returns an error whose message contains the operation ID (FND-02, AC 16)
+**C19** - Registering a spec with empty `Permission` and `Public: false` returns an error whose message contains the operation ID (FND-02, AC 16) `[done]`
 Proof: `go -C app test ./internal/platform/op -run '^TestRegister_RejectsMissingPermission$'`
 
-**C20** - Registering a `POST`, `PUT`, `PATCH` or `DELETE` spec with empty `AuditAction` returns an error containing the operation ID, for each of the 4 methods (FND-02, AC 17)
+**C20** - Registering a `POST`, `PUT`, `PATCH` or `DELETE` spec with empty `AuditAction` returns an error containing the operation ID, for each of the 4 methods (FND-02, AC 17) `[done]`
 Proof: `go -C app test ./internal/platform/op -run '^TestRegister_RejectsMutationWithoutAudit$'`
 
-**C21** - Valid specs register without error: a `GET` with `Public: true` and no audit action, a `GET` with a permission, and a `POST` with a permission and an audit action (FND-02, AC 16, AC 17)
+**C21** - Valid specs register without error: a `GET` with `Public: true` and no audit action, a `GET` with a permission, and a `POST` with a permission and an audit action (FND-02, AC 16, AC 17) `[done]`
 Proof: `go -C app test ./internal/platform/op -run '^TestRegister_AcceptsValidSpecs$'`
 
-**C22** - `app.New` fails, naming the operation ID, when a registered feature declares an operation without permission - the same function `cmd/api` uses (FND-02, AC 16, door 11)
+**C22** - `app.New` fails, naming the operation ID, when a registered feature declares an operation without permission - the same function `cmd/api` uses (FND-02, AC 16, door 11) `[done]`
 Proof: `go -C app test ./internal/app -run '^TestNew_FailsOnInvalidOperation$'`
 Proof: `go -C app test ./archtest -run '^TestCompositionRoot_CmdAPIUsesAppNew$'`
 
 ### S3 - Regras de arquitetura executáveis · ~10 files · ~30 KB · ~8k
 
-**C23** - Against a fixture module where `features/a` imports `features/b`, archtest reports a violation whose text contains both import paths (FND-03, AC 18)
+**C23** - Against a fixture module where `features/a` imports `features/b`, archtest reports a violation whose text contains both import paths (FND-03, AC 18) `[done]`
 Proof: `go -C app test ./archtest -run '^TestImports_RejectsCrossFeature$'`
 
-**C24** - Against a fixture module where `platform/x` imports `features/a`, archtest reports a violation containing both import paths (FND-03, AC 19)
+**C24** - Against a fixture module where `platform/x` imports `features/a`, archtest reports a violation containing both import paths (FND-03, AC 19) `[done]`
 Proof: `go -C app test ./archtest -run '^TestImports_RejectsPlatformToFeature$'`
 
-**C25** - Against a fixture where `features/a/slice` imports `features/a` and `internal/app` imports `features/a`, archtest reports no violation (FND-03, AC 18, door 11)
+**C25** - Against a fixture where `features/a/slice` imports `features/a` and `internal/app` imports `features/a`, archtest reports no violation (FND-03, AC 18, door 11) `[done]`
 Proof: `go -C app test ./archtest -run '^TestImports_AllowsSameFeatureAndCompositionRoot$'`
 
-**C26** - archtest reports no violation on the real `app` module (FND-03, AC 18, AC 19)
+**C26** - archtest reports no violation on the real `app` module (FND-03, AC 18, AC 19) `[done]`
 Proof: `go -C app test ./archtest -run '^TestImports_RepositoryIsClean$'`
 
 **C27** - With one sqlc-generated file edited in a temp copy, `task gen:sqlc:check` exits non-zero; on the committed tree it exits `0` (FND-03, AC 20)
@@ -115,7 +115,7 @@ Proof: `npm --prefix web run gen:check`
 **C30** - The `check` task in `Taskfile.yml` invokes all 8 steps - format check, golangci-lint, generated-code diffs, archtest, `go test`, web typecheck, web lint, web unit tests - as sequential `cmds` (Task stops at the first non-zero) (FND-03, AC 23)
 Proof: `go -C app test ./archtest -run '^TestTaskfile_CheckRunsAllSteps$'`
 
-**C31** - `app/go.mod` declares module `github.com/luiszkm/template-go` and `tool` directives for `sqlc`, `goose` and `golangci-lint`; there is no `go.mod` at the repository root (door 1)
+**C31** - `app/go.mod` declares module `github.com/luiszkm/template-go`; `app/tools/go.mod` declares `tool` directives for `sqlc`, `goose` and `golangci-lint`; there is no `go.mod` at the repository root (door 1, door 13 - amended with user approval 2026-10-07)
 Proof: `go -C app test ./archtest -run '^TestModuleLayout$'`
 
 **C32** - `app/go.mod` requires `huma/v2`, `pgx/v5`, `goose/v3`, `caarlos0/env`, `testify`, `testcontainers-go`, `otel`; `web/package.json` lists `react` 19, `vite`, `@tanstack/react-router`, `@tanstack/react-query`, `tailwindcss` 4, `zod`, `react-hook-form`, `openapi-typescript`, `openapi-fetch`, `vitest`, `@testing-library/react`, `@playwright/test`, `@biomejs/biome` (door 10)
@@ -158,13 +158,13 @@ Proof: `npm --prefix web run test -- src/features/status/ApiStatus.test.tsx -t "
 **C43** - Navigating to `/nao-existe` shows `Página não encontrada` and a link whose `href` is `/` (FND-05, AC 34)
 Proof: `npm --prefix web run test -- src/routes/notFound.test.tsx -t "not found"`
 
-**C44** - The `webui` handler returns `200` with the bytes of `index.html` for `GET /users/42` when no such file exists (FND-05, AC 35, door 9)
+**C44** - The `webui` handler returns `200` with the bytes of `index.html` for `GET /users/42` when no such file exists (FND-05, AC 35, door 9) `[done]`
 Proof: `go -C app test ./internal/platform/webui -run '^TestHandler_FallsBackToIndex$'`
 
-**C45** - The `webui` handler returns an existing static file (`/assets/app.js`) with its own bytes, not `index.html` (FND-05, AC 35, door 9)
+**C45** - The `webui` handler returns an existing static file (`/assets/app.js`) with its own bytes, not `index.html` (FND-05, AC 35, door 9) `[done]`
 Proof: `go -C app test ./internal/platform/webui -run '^TestHandler_ServesStaticFile$'`
 
-**C46** - In the assembled server, `GET /api/x`, `GET /healthz` and `GET /readyz` are never answered with `index.html` (FND-05, AC 35, AC 9)
+**C46** - In the assembled server, `GET /api/x`, `GET /healthz` and `GET /readyz` are never answered with `index.html` (FND-05, AC 35, AC 9) `[done]`
 Proof: `go -C app test ./internal/app -run '^TestRouting_APIAndHealthNotSwallowedBySPA$'`
 
 **C47** - No file under `web/src` outside `web/src/api/` calls `fetch(`, imports `axios`, or constructs `XMLHttpRequest` (FND-05, AC 36)
@@ -226,7 +226,7 @@ Proof: `go -C app test ./archtest -run '^TestTaskfile_CheckFastSteps$'`
 | Stop hook branches (3) | failing C51 · passing C51 · `stop_hook_active` C51 | - |
 | agent rule files (2) | Cursor C53 · Windsurf C53 | - |
 | CI steps (2) | `task check` C54 · `task e2e` C54 | - |
-| Landing doors (11) | 1 C31 · 2 C36 · 3 C11 · 4 C15 · 5 C19 · 6 C33 · 7 C23 · 8 C10 · 9 C44 · 10 C32 · 11 C22 | - |
+| Landing doors (13) | 1 C31 · 2 C36 · 3 C11 · 4 C15 · 5 C19 · 6 C33 · 7 C23 · 8 C10 · 9 C44 · 10 C32 · 11 C22 · 12 C36 · 13 C31 | - |
 
 - Claims naming a status code, route or response shape: C1-C3, C11-C13, C18, C36, C44-C46 - each proof issues a real HTTP request against a handler or the assembled server
 - C49 is a second proof of AC 30 at the browser level; it does not stand in for C39-C42, which assert each state at the component level
