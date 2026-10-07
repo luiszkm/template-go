@@ -13,6 +13,6 @@ import (
 // Register registers every feature's operations.
 func Register(api huma.API, d deps.Deps) error {
 	return errors.Join(
-		// features:register
+	// features:register
 	)
 }
