@@ -145,10 +145,10 @@ Proof: `npm --prefix web run e2e -- audit.spec.ts`
 
 | Set (size) | Member -> proof | Unproven |
 | --- | --- | --- |
-| `GET /api/v1/audit/events` statuses (4 + 500) | 200 C1 · 401 C14 · 403 C14 · 422 C5 · 500 documented C17 | - |
-| `GET /api/v1/audit/events/{id}` statuses (5 + 500) | 200 C12 · 401 C14 · 403 C14 · 404 C13 · 422 C13 · 500 documented C17 | - |
-| `GET /api/v1/audit/actions` statuses (3 + 500) | 200 C11 · 401 C14 · 403 C14 · 500 documented C17 | - |
-| list item keys (8) | C1, asserted as the exact key set | - |
+| `GET /api/v1/audit/events` statuses (5) | 200 C1 · 401 C14 · 403 C14 · 422 C5 · 500 documented C17 | - |
+| `GET /api/v1/audit/events/{id}` statuses (6) | 200 C12 · 401 C14 · 403 C14 · 404 C13 · 422 C13 · 500 documented C17 | - |
+| `GET /api/v1/audit/actions` statuses (4) | 200 C11 · 401 C14 · 403 C14 · 500 documented C17 | - |
+| list item keys (8) | C1, table-driven over all 8 (exact key set) | - |
 | actor shapes (2) | user C2 · null C2 | - |
 | page outcomes (3) | default 50 with next C3 · limit with next C3 · last page null C3 | - |
 | cursor edges (2) | below the newest C4 · below the oldest C4 | - |
@@ -158,7 +158,7 @@ Proof: `npm --prefix web run e2e -- audit.spec.ts`
 | filter combination with paging (1) | C10 | - |
 | detail id inputs (4) | unused 404 C13 · `abc` C13 · `0` C13 · `-1` C13 | - |
 | access marker per audit operation (3) | C14, table-driven over all 3 | - |
-| mutating methods under `/api/v1/audit` (4) | C15, over all 4 | - |
+| mutating methods under `/api/v1/audit` (4) | C15, table-driven over all 4 | - |
 | screen `/audit` states (11) | table C19 · empty C20 · loading C21 · error C22 · forbidden C23 · older C24 · action C25 · period C26 · actor and resource C27 · URL filters C28 · open C29 | - |
 | screen `/audit/$id` states (6) | fields and JSON C30 · null block C30 · not found C31 · loading C32 · error C32 · forbidden C23 | - |
 | menu link `Auditoria` (2) | shown C23 · hidden C23 | - |
