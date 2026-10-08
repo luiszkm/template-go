@@ -142,12 +142,12 @@ mudaram cai na mesma transação.
 
 | ID | Slice | Criteria | Status |
 | --- | --- | --- | --- |
-| RBAC-01 | S1 | 1, 2, 3, 4 | Pending |
-| RBAC-02 | S2 | 5, 6, 7, 8, 9, 10, 11, 12, 13 | Pending |
-| RBAC-03 | S3 | 14, 15, 16, 17, 18, 19, 20, 21 | Pending |
-| RBAC-04 | S4 | 22, 23 | Pending |
-| RBAC-05 | S5 | 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36 | Pending |
-| RBAC-06 | S6 | 37, 38, 39, 40, 41 | Pending |
+| RBAC-01 | S1 | 1, 2, 3, 4 | Implementing |
+| RBAC-02 | S2 | 5, 6, 7, 8, 9, 10, 11, 12, 13 | Implementing |
+| RBAC-03 | S3 | 14, 15, 16, 17, 18, 19, 20, 21 | Implementing |
+| RBAC-04 | S4 | 22, 23 | Implementing |
+| RBAC-05 | S5 | 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36 | Implementing |
+| RBAC-06 | S6 | 37, 38, 39, 40, 41 | Implementing |
 
 ## Observable
 
@@ -192,7 +192,7 @@ Reaproveita `platform/auth` (checagem de `Permission` e releitura das permissõe
 
 Web:
 
-6. `/roles*` e a seção `Papéis` -> `web/src/features/rbac/` (new) chamam só `src/api/client.ts` (exists); a rota `/users/$id` compõe `UserDetail` (users) e `UserRoles` (rbac) (door 4); `useMe`/`can` saem de `features/users` para `src/lib/session.ts` (door 5)
+6. `/roles*` e a seção `Papéis` -> `web/src/features/rbac/` (new) chamam só `src/api/client.ts` (exists); a rota `/users/$id` compõe `UserDetail` (users) e `UserRoles` (rbac) (door 4); `UserRoles` lê o e-mail do usuário por `GET /api/v1/users/{id}` (mesma chave de cache `["user", id]` do `UserDetail`) para o texto da confirmação; `useMe`/`can` saem de `features/users` para `src/lib/session.ts` (door 5)
 
 ## Relations
 
@@ -240,7 +240,9 @@ tabela nova. No columns and no types here.
 | domain | new term: `catálogo de permissões` - o conjunto de `Permission` registradas em `op`, sem `*`; fonte única para validar e exibir |
 | domain | existing term: papel `admin` era só um seed, agora é imutável pela API e tem guarda de último portador - quem depende hoje: `features/users/bootstrap` (atribui `admin` por nome, inalterado) |
 | stored data | migration com o índice `lower(name)`: o banco só tem `admin`, não há par que colida |
-| web | `session.ts` e `problems.ts` mudam de pasta: os imports de `features/users/*` e os testes que os mockam mudam de caminho, sem mudar asserção |
+| web | `session.ts` e `problems.ts` mudam para `src/lib/`, e `Field.tsx` para `src/components/` (o formulário de papéis também o usa); `emailInUse`, que só `users` usa, fica em `features/users/copy.ts`; os imports de `features/users/*` mudam de caminho, sem mudar asserção |
 | web | o menu (`UserMenu`) ganha o link `Papéis`; `routes/_authed/users/$id.tsx` passa a compor duas features |
 | contract | os tipos de corpo de `rbac` têm nomes próprios (`Role`, `RoleList`, `NewRole`, `RoleChanges`, `PermissionList`, `UserRoleList`, `RoleAssignment`) para não colidir no schema do Huma (users Impact `contract`) |
 | auth | nenhuma mudança em `platform/auth`: a releitura por requisição já faz AC 10 valer |
+| gate | `archtest` ganha `CheckWebFeatureImports` (door 4): nenhum arquivo em `web/src/features/<a>/` importa `@/features/<b>/` |
+| tests | `features/rbac/rbactest` registra operações de sonda (`zeta:do`, uma `Authenticated`) e `Declare(...)` para pôr permissões no catálogo sem importar outra feature |

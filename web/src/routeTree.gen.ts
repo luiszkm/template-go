@@ -13,6 +13,9 @@ import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as AuthedAccountPasswordRouteImport } from './routes/_authed/account/password'
+import { Route as AuthedRolesIndexRouteImport } from './routes/_authed/roles/index'
+import { Route as AuthedRolesIdRouteImport } from './routes/_authed/roles/$id'
+import { Route as AuthedRolesNewRouteImport } from './routes/_authed/roles/new'
 import { Route as AuthedUsersIndexRouteImport } from './routes/_authed/users/index'
 import { Route as AuthedUsersIdRouteImport } from './routes/_authed/users/$id'
 import { Route as AuthedUsersNewRouteImport } from './routes/_authed/users/new'
@@ -36,6 +39,21 @@ const AuthedAccountPasswordRoute = AuthedAccountPasswordRouteImport.update({
   path: '/account/password',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedRolesIndexRoute = AuthedRolesIndexRouteImport.update({
+  id: '/roles/',
+  path: '/roles/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedRolesIdRoute = AuthedRolesIdRouteImport.update({
+  id: '/roles/$id',
+  path: '/roles/$id',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedRolesNewRoute = AuthedRolesNewRouteImport.update({
+  id: '/roles/new',
+  path: '/roles/new',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedUsersIndexRoute = AuthedUsersIndexRouteImport.update({
   id: '/users/',
   path: '/users/',
@@ -56,16 +74,22 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/login': typeof LoginRoute
   '/account/password': typeof AuthedAccountPasswordRoute
+  '/roles/$id': typeof AuthedRolesIdRoute
+  '/roles/new': typeof AuthedRolesNewRoute
   '/users/$id': typeof AuthedUsersIdRoute
   '/users/new': typeof AuthedUsersNewRoute
+  '/roles/': typeof AuthedRolesIndexRoute
   '/users/': typeof AuthedUsersIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/': typeof AuthedIndexRoute
   '/account/password': typeof AuthedAccountPasswordRoute
+  '/roles/$id': typeof AuthedRolesIdRoute
+  '/roles/new': typeof AuthedRolesNewRoute
   '/users/$id': typeof AuthedUsersIdRoute
   '/users/new': typeof AuthedUsersNewRoute
+  '/roles': typeof AuthedRolesIndexRoute
   '/users': typeof AuthedUsersIndexRoute
 }
 export interface FileRoutesById {
@@ -74,8 +98,11 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/account/password': typeof AuthedAccountPasswordRoute
+  '/_authed/roles/$id': typeof AuthedRolesIdRoute
+  '/_authed/roles/new': typeof AuthedRolesNewRoute
   '/_authed/users/$id': typeof AuthedUsersIdRoute
   '/_authed/users/new': typeof AuthedUsersNewRoute
+  '/_authed/roles/': typeof AuthedRolesIndexRoute
   '/_authed/users/': typeof AuthedUsersIndexRoute
 }
 export interface FileRouteTypes {
@@ -84,16 +111,22 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/account/password'
+    | '/roles/$id'
+    | '/roles/new'
     | '/users/$id'
     | '/users/new'
+    | '/roles/'
     | '/users/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
     | '/'
     | '/account/password'
+    | '/roles/$id'
+    | '/roles/new'
     | '/users/$id'
     | '/users/new'
+    | '/roles'
     | '/users'
   id:
     | '__root__'
@@ -101,8 +134,11 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authed/'
     | '/_authed/account/password'
+    | '/_authed/roles/$id'
+    | '/_authed/roles/new'
     | '/_authed/users/$id'
     | '/_authed/users/new'
+    | '/_authed/roles/'
     | '/_authed/users/'
   fileRoutesById: FileRoutesById
 }
@@ -141,6 +177,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAccountPasswordRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/roles/': {
+      id: '/_authed/roles/'
+      path: '/roles'
+      fullPath: '/roles/'
+      preLoaderRoute: typeof AuthedRolesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/roles/$id': {
+      id: '/_authed/roles/$id'
+      path: '/roles/$id'
+      fullPath: '/roles/$id'
+      preLoaderRoute: typeof AuthedRolesIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/roles/new': {
+      id: '/_authed/roles/new'
+      path: '/roles/new'
+      fullPath: '/roles/new'
+      preLoaderRoute: typeof AuthedRolesNewRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/users/': {
       id: '/_authed/users/'
       path: '/users'
@@ -168,16 +225,22 @@ declare module '@tanstack/react-router' {
 interface AuthedRouteChildren {
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedAccountPasswordRoute: typeof AuthedAccountPasswordRoute
+  AuthedRolesIdRoute: typeof AuthedRolesIdRoute
+  AuthedRolesNewRoute: typeof AuthedRolesNewRoute
   AuthedUsersIdRoute: typeof AuthedUsersIdRoute
   AuthedUsersNewRoute: typeof AuthedUsersNewRoute
+  AuthedRolesIndexRoute: typeof AuthedRolesIndexRoute
   AuthedUsersIndexRoute: typeof AuthedUsersIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedAccountPasswordRoute: AuthedAccountPasswordRoute,
+  AuthedRolesIdRoute: AuthedRolesIdRoute,
+  AuthedRolesNewRoute: AuthedRolesNewRoute,
   AuthedUsersIdRoute: AuthedUsersIdRoute,
   AuthedUsersNewRoute: AuthedUsersNewRoute,
+  AuthedRolesIndexRoute: AuthedRolesIndexRoute,
   AuthedUsersIndexRoute: AuthedUsersIndexRoute,
 }
 

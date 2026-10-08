@@ -28,4 +28,17 @@ describe("UserMenu", () => {
     renderAt("/");
     expect(await screen.findByRole("link", { name: "Usuários" })).toBeInTheDocument();
   });
+
+  it("roles link only with rbac:read", async () => {
+    stubApi({ "GET /api/v1/users/me": meWith("rbac:read"), "GET /readyz": json(200, { status: "ready" }) });
+    renderAt("/");
+    expect(await screen.findByRole("link", { name: "Papéis" })).toBeInTheDocument();
+  });
+
+  it("hides the roles link without rbac:read", async () => {
+    stubApi({ "GET /api/v1/users/me": meWith("users:read"), "GET /readyz": json(200, { status: "ready" }) });
+    renderAt("/");
+    expect(await screen.findByRole("link", { name: "Usuários" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Papéis" })).not.toBeInTheDocument();
+  });
 });
