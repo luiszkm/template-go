@@ -228,7 +228,7 @@ reimplementa Problem Details nem registro de rota.
 Requisição autenticada:
 
 1. request -> `platform/httpx` (exists) - request id, log, recover; resolve o IP do cliente (door 9) e guarda no contexto
-2. `platform/auth` (new, door 6) - middleware Huma: lê a operação; `Public` passa; senão lê o cookie `session`, busca o SHA-256 em `sessions` junto de usuário ativo e permissões; ausente/expirado/desativado -> `401`; sem a `Permission` nem `*` -> `403`; põe o `Principal` no contexto
+2. `platform/auth` (new, doors 6 e 18) - middleware Huma instalado por `app.New` antes de qualquer operação: lê a operação; `Public` passa; senão lê o cookie `session`, busca o SHA-256 em `sessions` junto de usuário ativo e permissões; ausente/expirado/desativado -> `401`; sem a `Permission` nem `*` -> `403`; põe o `Principal` no contexto
 3. `platform/op` (exists, door 5 muda o contrato) - recusa no boot a operação sem exatamente um de `Permission`/`Public`/`Authenticated`
 4. `features/users/<slice>` (new, foundation door 6) - handler; abre `db.WithTx`, muda as linhas e chama `platform/audit` (new, door 8) com o mesmo `tx`
 5. `platform/db` (exists) - commit ou rollback de mutação e evento juntos
@@ -240,7 +240,7 @@ Login:
 
 CLI:
 
-8. `api users create-admin` -> `app/cmd/api` (exists) -> `features/users/bootstrap` (new, door 13) - valida, faz hash, cria usuário + vínculo com `admin` + evento `user.created` numa transação
+8. `api users create-admin` -> `app/cmd/api` (exists) -> `internal/app.CreateAdmin` (exists, raiz de composição; foundation C22 proíbe `cmd/api` de importar features) -> `features/users/bootstrap` (new, door 13) - valida, faz hash, cria usuário + vínculo com `admin` + evento `user.created` numa transação
 
 Web:
 
@@ -301,6 +301,8 @@ A CLI `api users create-admin` (exit `0`, `1`, `2`) é contrato de operador, nã
 | 14. rotas de sessão | `/api/v1/users/session` (POST/DELETE), `/api/v1/users/me`, `/api/v1/users/me/password` | `/api/v1/auth/*` - não existe feature `auth`, e foundation door 2 põe toda rota sob `/api/v1/<feature>/` |
 | 15. configuração | `SESSION_TTL` (default `12h`), `COOKIE_SECURE` (default `true`), `TRUSTED_PROXIES` (default vazio) em `platform/config` | constantes no código - impossível rodar em http local sem editar fonte |
 | 16. guarda de rota no web | layout de rota `web/src/routes/_authed.tsx` com `beforeLoad` chamando `queryClient.ensureQueryData(meQuery)`; telas protegidas como filhas; hook `useMe()`/`can(permission)` em `web/src/features/users/` | checar sessão dentro de cada tela - a primeira esquecida vaza conteúdo; contexto React próprio - duplica o cache do TanStack Query |
+| 17. status de erro documentados (achado no build, 2026-10-08) | `op.Spec.Errors []int` lista os status próprios da operação (`404`, `409`, `429`...); `op.Register` acrescenta `401` a toda operação não `Public` e `403` a toda operação com `Permission`, e repassa a `huma.Operation.Errors` | declarar `401`/`403` em cada slice - a primeira esquecida some do contrato que o web consome; não documentar - o cliente gerado não conhece os status que o `Surface` revisou |
+| 18. onde o middleware de auth é instalado (corrige a door 6, achado no build, 2026-10-08) | `auth.Install(api, pool, ttl)` chamado em `app.New` (e em `testkit.NewAPI`) logo após `httpx.NewAPI` e antes do registro de qualquer operação; `httpx.NewAPI` continua sem banco | dentro de `httpx.NewAPI` - ela é usada sem banco (export do OpenAPI, testes da foundation) e não recebe pool; o Huma liga o middleware à operação no registro, então quem instala precisa ser a raiz de composição |
 
 - Nothing else in this change is hard to reverse
 
@@ -314,5 +316,10 @@ A CLI `api users create-admin` (exit `0`, `1`, `2`) é contrato de operador, nã
 | domain | existing term: `op.Spec` exigia exatamente um de `Permission`/`Public`, agora um de três - quem depende hoje: `platform/health` (registra `/healthz` e `/readyz` como `Public`, inalterado), o template do `cmd/newslice` (gera `Permission`, inalterado) e o teste da foundation para AC 16, que precisa do caso novo |
 | domain | existing term: `Permission` era só declarada, agora é exigida - toda operação futura com `Permission` responde `403` a quem não tem papel; o slice gerado por `task new:slice` passa a responder `401` antes do `501` sem sessão, e o teste gerado precisa autenticar (muda o template do gerador e a foundation AC 26) |
 | stored data | nothing to migrate - tabelas novas em banco sem usuários; o seed do papel `admin` vai na própria migration |
-| config | três variáveis novas com defaults; `task dev` e o `docker-compose` de dev passam `COOKIE_SECURE=false` |
+| config | três variáveis novas com defaults; `task dev:api`, `task serve:bin` e o serviço `app` do `compose.yaml` passam `COOKIE_SECURE=false` (http local) |
 | docs | `AGENTS.md` ganha `Authenticated`, `api users create-admin` e o passo de criar o admin no `task dev` |
+| web | `/` passa a exigir sessão (AC 44): o helper `stubFetch` dos testes da foundation responde `GET /api/v1/users/me` como admin por padrão, e o e2e `api online` (foundation C49) faz login antes de abrir `/`; as asserções da foundation não mudaram |
+| web | `makeRouter` e `makeTestRouter` recebem o `QueryClient` (contexto do router, usado pelo `beforeLoad` do layout `_authed`); `renderAt` devolve também o `router` |
+| contract | o Huma nomeia schemas pelo nome do tipo Go: dois slices com `Body` colidem e o boot entra em pânico; os tipos de corpo dos slices de `users` têm nomes próprios (`Credentials`, `NewUser`, `UserChanges`, `PasswordChange`, `UserDetail`, `UserPage`...) |
+| platform | `deps.Deps` ganha `Logger`, `SessionTTL`, `CookieSecure`; `run()` de `cmd/api` ganha `stdin`; `testkit` ganha `MigratedDB` (um container por binário de teste, um banco clonado por teste), `NewAPI`, `SignIn` e `Do` |
+| gate | `task test` roda com `GOFLAGS=-p=4`: com um container Postgres por pacote de teste, o gate aninhado do gerador chegava a ~40 containers simultâneos e o Docker Desktop deixava de responder; `testkit.MigratedDB` tenta subir o container até 6 vezes |
