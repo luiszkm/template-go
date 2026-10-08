@@ -20,6 +20,7 @@ export function UserMenu() {
       <Link to="/">Início</Link>
       {can(me, "users:read") && <Link to="/users">Usuários</Link>}
       {can(me, "rbac:read") && <Link to="/roles">Papéis</Link>}
+      {can(me, "audit:read") && <Link to="/audit">Auditoria</Link>}
       <Link to="/account/password">Minha senha</Link>
       <span className="ml-auto text-neutral-600">{me?.email}</span>
       <Button variant="outline" size="sm" onClick={signOut}>

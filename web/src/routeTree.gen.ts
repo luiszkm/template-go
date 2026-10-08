@@ -13,6 +13,8 @@ import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as AuthedAccountPasswordRouteImport } from './routes/_authed/account/password'
+import { Route as AuthedAuditIndexRouteImport } from './routes/_authed/audit/index'
+import { Route as AuthedAuditIdRouteImport } from './routes/_authed/audit/$id'
 import { Route as AuthedRolesIndexRouteImport } from './routes/_authed/roles/index'
 import { Route as AuthedRolesIdRouteImport } from './routes/_authed/roles/$id'
 import { Route as AuthedRolesNewRouteImport } from './routes/_authed/roles/new'
@@ -37,6 +39,16 @@ const AuthedIndexRoute = AuthedIndexRouteImport.update({
 const AuthedAccountPasswordRoute = AuthedAccountPasswordRouteImport.update({
   id: '/account/password',
   path: '/account/password',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedAuditIndexRoute = AuthedAuditIndexRouteImport.update({
+  id: '/audit/',
+  path: '/audit/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedAuditIdRoute = AuthedAuditIdRouteImport.update({
+  id: '/audit/$id',
+  path: '/audit/$id',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedRolesIndexRoute = AuthedRolesIndexRouteImport.update({
@@ -74,10 +86,12 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/login': typeof LoginRoute
   '/account/password': typeof AuthedAccountPasswordRoute
+  '/audit/$id': typeof AuthedAuditIdRoute
   '/roles/$id': typeof AuthedRolesIdRoute
   '/roles/new': typeof AuthedRolesNewRoute
   '/users/$id': typeof AuthedUsersIdRoute
   '/users/new': typeof AuthedUsersNewRoute
+  '/audit/': typeof AuthedAuditIndexRoute
   '/roles/': typeof AuthedRolesIndexRoute
   '/users/': typeof AuthedUsersIndexRoute
 }
@@ -85,10 +99,12 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/': typeof AuthedIndexRoute
   '/account/password': typeof AuthedAccountPasswordRoute
+  '/audit/$id': typeof AuthedAuditIdRoute
   '/roles/$id': typeof AuthedRolesIdRoute
   '/roles/new': typeof AuthedRolesNewRoute
   '/users/$id': typeof AuthedUsersIdRoute
   '/users/new': typeof AuthedUsersNewRoute
+  '/audit': typeof AuthedAuditIndexRoute
   '/roles': typeof AuthedRolesIndexRoute
   '/users': typeof AuthedUsersIndexRoute
 }
@@ -98,10 +114,12 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/account/password': typeof AuthedAccountPasswordRoute
+  '/_authed/audit/$id': typeof AuthedAuditIdRoute
   '/_authed/roles/$id': typeof AuthedRolesIdRoute
   '/_authed/roles/new': typeof AuthedRolesNewRoute
   '/_authed/users/$id': typeof AuthedUsersIdRoute
   '/_authed/users/new': typeof AuthedUsersNewRoute
+  '/_authed/audit/': typeof AuthedAuditIndexRoute
   '/_authed/roles/': typeof AuthedRolesIndexRoute
   '/_authed/users/': typeof AuthedUsersIndexRoute
 }
@@ -111,10 +129,12 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/account/password'
+    | '/audit/$id'
     | '/roles/$id'
     | '/roles/new'
     | '/users/$id'
     | '/users/new'
+    | '/audit/'
     | '/roles/'
     | '/users/'
   fileRoutesByTo: FileRoutesByTo
@@ -122,10 +142,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/'
     | '/account/password'
+    | '/audit/$id'
     | '/roles/$id'
     | '/roles/new'
     | '/users/$id'
     | '/users/new'
+    | '/audit'
     | '/roles'
     | '/users'
   id:
@@ -134,10 +156,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authed/'
     | '/_authed/account/password'
+    | '/_authed/audit/$id'
     | '/_authed/roles/$id'
     | '/_authed/roles/new'
     | '/_authed/users/$id'
     | '/_authed/users/new'
+    | '/_authed/audit/'
     | '/_authed/roles/'
     | '/_authed/users/'
   fileRoutesById: FileRoutesById
@@ -175,6 +199,20 @@ declare module '@tanstack/react-router' {
       path: '/account/password'
       fullPath: '/account/password'
       preLoaderRoute: typeof AuthedAccountPasswordRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/audit/': {
+      id: '/_authed/audit/'
+      path: '/audit'
+      fullPath: '/audit/'
+      preLoaderRoute: typeof AuthedAuditIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/audit/$id': {
+      id: '/_authed/audit/$id'
+      path: '/audit/$id'
+      fullPath: '/audit/$id'
+      preLoaderRoute: typeof AuthedAuditIdRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/roles/': {
@@ -225,10 +263,12 @@ declare module '@tanstack/react-router' {
 interface AuthedRouteChildren {
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedAccountPasswordRoute: typeof AuthedAccountPasswordRoute
+  AuthedAuditIdRoute: typeof AuthedAuditIdRoute
   AuthedRolesIdRoute: typeof AuthedRolesIdRoute
   AuthedRolesNewRoute: typeof AuthedRolesNewRoute
   AuthedUsersIdRoute: typeof AuthedUsersIdRoute
   AuthedUsersNewRoute: typeof AuthedUsersNewRoute
+  AuthedAuditIndexRoute: typeof AuthedAuditIndexRoute
   AuthedRolesIndexRoute: typeof AuthedRolesIndexRoute
   AuthedUsersIndexRoute: typeof AuthedUsersIndexRoute
 }
@@ -236,10 +276,12 @@ interface AuthedRouteChildren {
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedAccountPasswordRoute: AuthedAccountPasswordRoute,
+  AuthedAuditIdRoute: AuthedAuditIdRoute,
   AuthedRolesIdRoute: AuthedRolesIdRoute,
   AuthedRolesNewRoute: AuthedRolesNewRoute,
   AuthedUsersIdRoute: AuthedUsersIdRoute,
   AuthedUsersNewRoute: AuthedUsersNewRoute,
+  AuthedAuditIndexRoute: AuthedAuditIndexRoute,
   AuthedRolesIndexRoute: AuthedRolesIndexRoute,
   AuthedUsersIndexRoute: AuthedUsersIndexRoute,
 }

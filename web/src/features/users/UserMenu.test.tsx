@@ -41,4 +41,17 @@ describe("UserMenu", () => {
     expect(await screen.findByRole("link", { name: "Usuários" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Papéis" })).not.toBeInTheDocument();
   });
+
+  it("audit link with audit:read", async () => {
+    stubApi({ "GET /api/v1/users/me": meWith("audit:read"), "GET /readyz": json(200, { status: "ready" }) });
+    renderAt("/");
+    expect(await screen.findByRole("link", { name: "Auditoria" })).toBeInTheDocument();
+  });
+
+  it("hides the audit link without audit:read", async () => {
+    stubApi({ "GET /api/v1/users/me": meWith("users:read"), "GET /readyz": json(200, { status: "ready" }) });
+    renderAt("/");
+    expect(await screen.findByRole("link", { name: "Usuários" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Auditoria" })).not.toBeInTheDocument();
+  });
 });

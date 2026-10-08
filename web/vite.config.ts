@@ -25,6 +25,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     testTimeout: 30_000,
+    env: { TZ: "America/Sao_Paulo" },
     globals: true,
     setupFiles: [path.resolve(import.meta.dirname, "src/test/setup.ts")],
     include: ["src/**/*.test.{ts,tsx}", "vite.config.test.ts"],
