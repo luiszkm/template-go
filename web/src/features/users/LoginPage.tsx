@@ -5,7 +5,7 @@ import { api } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { meQuery } from "./session";
+import { meQuery } from "@/lib/session";
 
 type Credentials = { email: string; password: string };
 

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useEffect, useState } from "react";
 import { api } from "@/api/client";
 import type { components } from "@/api/schema";
+import { Field } from "@/components/Field";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,9 +12,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Field } from "./Field";
-import { emailInUse, type FieldErrors, fieldErrors, forbidden } from "./problems";
-import { ApiError, can, useMe } from "./session";
+import { type FieldErrors, fieldErrors, forbidden } from "@/lib/problems";
+import { ApiError, can, useMe } from "@/lib/session";
+import { emailInUse } from "./copy";
 
 type User = components["schemas"]["UserDetail"];
 type Changes = components["schemas"]["UserChanges"];

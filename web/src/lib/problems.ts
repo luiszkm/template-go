@@ -13,5 +13,4 @@ export function fieldErrors(problem: Problem | undefined): FieldErrors {
   return errors;
 }
 
-export const emailInUse = "Este e-mail já está em uso.";
 export const forbidden = "Você não tem permissão para acessar esta página.";

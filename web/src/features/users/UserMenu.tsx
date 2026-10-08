@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { api } from "@/api/client";
 import { Button } from "@/components/ui/button";
-import { can, meQuery, useMe } from "./session";
+import { can, meQuery, useMe } from "@/lib/session";
 
 export function UserMenu() {
   const { data: me } = useMe();

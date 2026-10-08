@@ -2,10 +2,11 @@ import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
 import { api } from "@/api/client";
+import { Field } from "@/components/Field";
 import { Button } from "@/components/ui/button";
-import { Field } from "./Field";
-import { emailInUse, type FieldErrors, fieldErrors, forbidden } from "./problems";
-import { ApiError, can, useMe } from "./session";
+import { type FieldErrors, fieldErrors, forbidden } from "@/lib/problems";
+import { ApiError, can, useMe } from "@/lib/session";
+import { emailInUse } from "./copy";
 
 export function UserForm() {
   const { data: me } = useMe();

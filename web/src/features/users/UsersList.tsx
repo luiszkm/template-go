@@ -4,8 +4,8 @@ import { useState } from "react";
 import { api } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { forbidden } from "./problems";
-import { ApiError, can, useMe } from "./session";
+import { forbidden } from "@/lib/problems";
+import { ApiError, can, useMe } from "@/lib/session";
 
 const pageSize = 50;
 

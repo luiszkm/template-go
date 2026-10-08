@@ -1,10 +1,10 @@
 import { useMutation } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
 import { api } from "@/api/client";
+import { Field } from "@/components/Field";
 import { Button } from "@/components/ui/button";
-import { Field } from "./Field";
-import { type FieldErrors, fieldErrors } from "./problems";
-import { ApiError } from "./session";
+import { type FieldErrors, fieldErrors } from "@/lib/problems";
+import { ApiError } from "@/lib/session";
 
 export function ChangePassword() {
   const [current, setCurrent] = useState("");

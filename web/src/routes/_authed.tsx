@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { ApiError, meQuery } from "@/features/users/session";
 import { UserMenu } from "@/features/users/UserMenu";
+import { ApiError, meQuery } from "@/lib/session";
 
 export const Route = createFileRoute("/_authed")({
   beforeLoad: async ({ context, location }) => {

@@ -1,8 +1,8 @@
 import { type QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { meQuery } from "@/lib/session";
 import { onUnauthorized } from "./api/client";
-import { meQuery } from "./features/users/session";
 import type { makeRouter } from "./router";
 
 export function App({
