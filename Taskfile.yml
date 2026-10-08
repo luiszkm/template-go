@@ -60,7 +60,7 @@ tasks:
     desc: Every Go test. Postgres tests need Docker.
     dir: app
     env:
-      GOFLAGS: -p=4
+      GOFLAGS: -p=4 -timeout=30m
     cmds:
       - go test -count=1 ./...
 

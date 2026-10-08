@@ -97,4 +97,33 @@ describe("UserDetail on /users/$id", () => {
     expect(await screen.findByText("Ativo")).toBeInTheDocument();
     expect(requests.filter((r) => r.path === `${path}/activate`)).toHaveLength(1);
   });
+
+  it("shows error and retries", async () => {
+    const requests = stubApi({
+      "GET /api/v1/users/me": meWith(...all),
+      [`GET ${path}`]: [json(500, { status: 500 }), json(200, bia)],
+    });
+    renderAt(`/users/${id}`);
+    expect(await screen.findByText("Não foi possível carregar os usuários.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+    expect(await screen.findByRole("heading", { name: "b@x.com" })).toBeInTheDocument();
+    expect(requests.filter((r) => r.method === "GET" && r.path === path)).toHaveLength(2);
+  });
+
+  it("maps 422 errors to fields on edit", async () => {
+    stubApi({
+      "GET /api/v1/users/me": meWith(...all),
+      [`GET ${path}`]: json(200, bia),
+      [`PATCH ${path}`]: json(422, {
+        status: 422,
+        errors: [{ location: "body.name", message: "expected length <= 100" }],
+      }),
+    });
+    renderAt(`/users/${id}`);
+    const name = await screen.findByLabelText("Nome");
+    await waitFor(() => expect(name).toHaveValue("Bia"));
+    await userEvent.type(name, "x");
+    await userEvent.click(screen.getByRole("button", { name: "Salvar" }));
+    expect(await screen.findByText("expected length <= 100")).toHaveAttribute("id", "name-error");
+  });
 });

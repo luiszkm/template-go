@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 7,
+  "next_id": 14,
   "lessons": [
     {
       "id": "L-001",
@@ -112,6 +112,132 @@
       ],
       "created": "2026-10-08T13:48:50Z",
       "last_seen": "2026-10-08T13:48:50Z"
+    },
+    {
+      "id": "L-007",
+      "key": "ac_gap::enumerate an auth middleware s decision rows from its code including the branch taken when no database is configured and assert each one at its own layer",
+      "text": "Enumerate an auth middleware's decision rows from its code, including the branch taken when no database is configured, and assert each one at its own layer",
+      "signal": "ac_gap",
+      "scope": "platform",
+      "status": "candidate",
+      "features": [
+        "users"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "app/internal/platform/auth/auth.go:133 (platform)"
+      ],
+      "created": "2026-10-08T16:13:37Z",
+      "last_seen": "2026-10-08T16:13:37Z"
+    },
+    {
+      "id": "L-008",
+      "key": "ac_gap::when the plan applies a screen state to a second screen prove that state on the second screen too",
+      "text": "When the plan applies a screen state to a second screen, prove that state on the second screen too",
+      "signal": "ac_gap",
+      "scope": "web",
+      "status": "candidate",
+      "features": [
+        "users"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "web/src/features/users/UserDetail.tsx:94 (web)"
+      ],
+      "created": "2026-10-08T16:13:38Z",
+      "last_seen": "2026-10-08T16:13:38Z"
+    },
+    {
+      "id": "L-009",
+      "key": "ac_gap::when a criterion names two forms such as creation or edition prove each form not only the first",
+      "text": "When a criterion names two forms such as creation or edition, prove each form, not only the first",
+      "signal": "ac_gap",
+      "scope": "web",
+      "status": "candidate",
+      "features": [
+        "users"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "web/src/features/users/UserDetail.tsx:70 (web)"
+      ],
+      "created": "2026-10-08T16:13:39Z",
+      "last_seen": "2026-10-08T16:13:39Z"
+    },
+    {
+      "id": "L-010",
+      "key": "ac_gap::classify branching web components under the test policy and assert every branch including fallback messages and redirect guards",
+      "text": "Classify branching web components under the Test policy and assert every branch, including fallback messages and redirect guards",
+      "signal": "ac_gap",
+      "scope": "web",
+      "status": "candidate",
+      "features": [
+        "users"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "web/src/features/users/LoginPage.tsx:21 (web)"
+      ],
+      "created": "2026-10-08T16:13:39Z",
+      "last_seen": "2026-10-08T16:13:39Z"
+    },
+    {
+      "id": "L-011",
+      "key": "spec_precision_gap::make a check s example input satisfy the precondition it states a case variant must normalize to the existing value",
+      "text": "Make a check's example input satisfy the precondition it states; a case variant must normalize to the existing value",
+      "signal": "spec_precision_gap",
+      "scope": "checks",
+      "status": "candidate",
+      "features": [
+        "users"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C2 (checks)"
+      ],
+      "created": "2026-10-08T16:13:40Z",
+      "last_seen": "2026-10-08T16:13:40Z"
+    },
+    {
+      "id": "L-012",
+      "key": "spec_precision_gap::list every test that carries a clause of a check in its proof lines not only the main test",
+      "text": "List every test that carries a clause of a check in its Proof lines, not only the main test",
+      "signal": "spec_precision_gap",
+      "scope": "checks",
+      "status": "candidate",
+      "features": [
+        "users"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C50 (checks)"
+      ],
+      "created": "2026-10-08T16:13:41Z",
+      "last_seen": "2026-10-08T16:13:41Z"
+    },
+    {
+      "id": "L-013",
+      "key": "spec_precision_gap::assert the exact count of audit rows a mutation writes not only that one can be read",
+      "text": "Assert the exact count of audit rows a mutation writes, not only that one can be read",
+      "signal": "spec_precision_gap",
+      "scope": "audit",
+      "status": "candidate",
+      "features": [
+        "users"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "app/internal/features/users/change_password/change_password_test.go:72 (audit)"
+      ],
+      "created": "2026-10-08T16:13:41Z",
+      "last_seen": "2026-10-08T16:13:41Z"
     }
   ]
 }

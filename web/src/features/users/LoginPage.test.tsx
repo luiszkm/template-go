@@ -63,4 +63,25 @@ describe("LoginPage", () => {
     const button = await screen.findByRole("button", { name: "Entrando…" });
     expect(button).toBeDisabled();
   });
+
+  it("shows a generic message for other failures", async () => {
+    stubApi({ "POST /api/v1/users/session": json(500, { status: 500 }) });
+    renderAt("/login");
+    await signIn();
+    expect(await screen.findByText("Não foi possível entrar. Tente novamente.")).toBeInTheDocument();
+  });
+
+  it("ignores redirects that leave the site", async () => {
+    stubApi({
+      "POST /api/v1/users/session": signedIn,
+      "GET /api/v1/users/me": meWith(),
+      "GET /readyz": json(200, { status: "ready" }),
+    });
+    for (const redirect of ["%2F%2Fevil.example", "https%3A%2F%2Fevil.example", "users"]) {
+      const rendered = renderAt(`/login?redirect=${redirect}`);
+      await signIn();
+      await waitFor(() => expect(rendered.router.state.location.href).toBe("/"));
+      rendered.unmount();
+    }
+  });
 });

@@ -50,6 +50,48 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: C51 - app/cmd/agenthooks/main.go:32 (cmd)
 - last seen: 2026-10-08T13:48:50Z
 
+### L-007 - Enumerate an auth middleware's decision rows from its code, including the branch taken when no database is configured, and assert each one at its own layer
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `platform` · harmful: 0
+- features: users
+- evidence: app/internal/platform/auth/auth.go:133 (platform)
+- last seen: 2026-10-08T16:13:37Z
+
+### L-008 - When the plan applies a screen state to a second screen, prove that state on the second screen too
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `web` · harmful: 0
+- features: users
+- evidence: web/src/features/users/UserDetail.tsx:94 (web)
+- last seen: 2026-10-08T16:13:38Z
+
+### L-009 - When a criterion names two forms such as creation or edition, prove each form, not only the first
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `web` · harmful: 0
+- features: users
+- evidence: web/src/features/users/UserDetail.tsx:70 (web)
+- last seen: 2026-10-08T16:13:39Z
+
+### L-010 - Classify branching web components under the Test policy and assert every branch, including fallback messages and redirect guards
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `web` · harmful: 0
+- features: users
+- evidence: web/src/features/users/LoginPage.tsx:21 (web)
+- last seen: 2026-10-08T16:13:39Z
+
+### L-011 - Make a check's example input satisfy the precondition it states; a case variant must normalize to the existing value
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `checks` · harmful: 0
+- features: users
+- evidence: C2 (checks)
+- last seen: 2026-10-08T16:13:40Z
+
+### L-012 - List every test that carries a clause of a check in its Proof lines, not only the main test
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `checks` · harmful: 0
+- features: users
+- evidence: C50 (checks)
+- last seen: 2026-10-08T16:13:41Z
+
+### L-013 - Assert the exact count of audit rows a mutation writes, not only that one can be read
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `audit` · harmful: 0
+- features: users
+- evidence: app/internal/features/users/change_password/change_password_test.go:72 (audit)
+- last seen: 2026-10-08T16:13:41Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

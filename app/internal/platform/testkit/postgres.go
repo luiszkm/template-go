@@ -20,6 +20,9 @@ type Postgres struct {
 // StartPostgres starts an empty database and terminates it when the test ends. Requires Docker.
 func StartPostgres(t *testing.T) *Postgres {
 	t.Helper()
+	if err := pinDockerHost(); err != nil {
+		t.Fatalf("testkit: %v", err)
+	}
 	ctx := context.Background()
 	c, err := postgres.Run(ctx, "postgres:17-alpine",
 		postgres.WithDatabase("app"),

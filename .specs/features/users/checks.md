@@ -5,7 +5,7 @@ Plan: `.specs/features/users/plan.md`
 
 ## Intent
 
-84 checks in 8 slices · 16 one-way doors · 0 open
+89 checks in 9 slices · 18 one-way doors · 0 open
 
 Comandos reais do repositório: `go -C app test <pkg> -run '<regex>'`, `npm --prefix web run test -- <file> -t "<name>"`
 e `npm --prefix web run e2e -- <spec>` (Playwright contra o binário, via `task e2e:serve`). Testes Go que tocam o
@@ -20,7 +20,7 @@ que a verificação rodou - é a única dupla, e não substitui o banco.
 **C1** - `api users create-admin --email "  Ana@X.com " --name Ana` with `senha-longa-123` on stdin exits `0`, prints the new user id (a UUID) on stdout, and leaves one active user with email `ana@x.com` holding role `admin` and one `audit_events` row with action `user.created`, `actor_id` null, `resource_id` equal to the printed id (USR-01, AC 1) `[done]`
 Proof: `go -C app test ./cmd/api -run '^TestCreateAdmin_CreatesActiveAdmin$'`
 
-**C2** - With `ana@x.com` already present, `create-admin --email A@x.com` exits `1`, stderr contains `already exists`, and the `users` count is unchanged (USR-01, AC 2) `[done]`
+**C2** - With `ana@x.com` already present, `create-admin --email ANA@x.com` exits `1`, stderr contains `already exists`, and the `users` count is unchanged (USR-01, AC 2) `[done]`
 Proof: `go -C app test ./cmd/api -run '^TestCreateAdmin_ExistingEmailExits1$'`
 
 **C3** - `create-admin` exits `2` with a line starting `usage:` on stderr and creates no row for each of 4 inputs: no `--email`, no `--name`, an 11-character password, a 129-character password; passwords of exactly 12 and 128 characters are accepted (USR-01, AC 3) `[done]`
@@ -187,6 +187,7 @@ Proof: `go -C app test ./internal/app -run '^TestUsersOperations_AccessMarkers$'
 
 **C50** - `PUT /api/v1/users/me/password` with the right current password and a 12-character new one returns `204`; the new password logs in and the old one gets `401`; of the caller's 2 sessions the other gets `401` and the current still gets `200` on `/me`; one `user.password_changed` audit row exists whose JSON contains no `password` key (USR-05, AC 42) `[done]`
 Proof: `go -C app test ./internal/features/users/change_password -run '^TestChangePassword_RevokesOtherSessions$'`
+Proof: `go -C app test ./internal/features/users/change_password -run '^TestChangePassword_AuditsWithoutPassword$'`
 
 **C51** - A wrong `current_password` returns `422` with `errors[].location` `body.current_password`, leaves the hash and both sessions intact; an 11-character `new_password` returns `422` at `body.new_password` (USR-05, AC 43) `[done]`
 Proof: `go -C app test ./internal/features/users/change_password -run '^TestChangePassword_Validation422$'`
@@ -270,6 +271,7 @@ Proof: `npm --prefix web run test -- src/features/users/UserDetail.test.tsx -t "
 
 **C74** - With `total` `120`: page 1 has `Anterior` disabled and `Próxima` enabled; `Próxima` requests `offset=50`; page 3 has `Próxima` disabled; with `total` `50` neither button is shown (USR-07, AC 56) `[done]`
 Proof: `npm --prefix web run test -- src/features/users/UsersList.test.tsx -t "paginates by 50"`
+Proof: `npm --prefix web run test -- src/features/users/UsersList.test.tsx -t "hides pagination for 50 users"`
 
 **C75** - Submitting `/users/new` with valid data posts the body and lands on `/users/<id from the 201>` (USR-07, AC 57) `[done]`
 Proof: `npm --prefix web run test -- src/features/users/UserForm.test.tsx -t "creates and navigates"`
@@ -301,6 +303,23 @@ Proof: `npm --prefix web run test -- src/features/users/ChangePassword.test.tsx 
 **C84** - Different values in the two new-password fields show `As senhas não conferem.` and send no request (USR-07, AC 65) `[done]`
 Proof: `npm --prefix web run test -- src/features/users/ChangePassword.test.tsx -t "rejects mismatch"`
 
+### S9 - Lacunas da verificação, rodada 1 · ~4 files · ~10 KB · ~3k
+
+**C85** - With no database configured, the auth middleware answers `503` problem+json without running the handler on an `Authenticated` and on a `Permission` operation, while a `Public` operation answers `200` (verification round 1 - auth middleware decision table) `[done]`
+Proof: `go -C app test ./internal/platform/auth -run '^TestMiddleware_NoDatabase503$'`
+
+**C86** - A `500` on `GET /api/v1/users/{id}` shows `Não foi possível carregar os usuários.` on `/users/$id` and a `Tentar novamente` button that requests the user again (USR-07, AC 54 applied to the detail screen by `Observable`) `[done]`
+Proof: `npm --prefix web run test -- src/features/users/UserDetail.test.tsx -t "shows error and retries"`
+
+**C87** - A `422` on the `PATCH` of `/users/$id` with an error at `body.name` shows its message under the name field (USR-07, AC 59, edition) `[done]`
+Proof: `npm --prefix web run test -- src/features/users/UserDetail.test.tsx -t "maps 422 errors to fields on edit"`
+
+**C88** - A login answered with a status other than `204`, `401` and `429` shows `Não foi possível entrar. Tente novamente.` (USR-06, `/login` error state) `[done]`
+Proof: `npm --prefix web run test -- src/features/users/LoginPage.test.tsx -t "shows a generic message for other failures"`
+
+**C89** - After login, a `redirect` of `//evil.example`, `https://evil.example` or `users` lands on `/` (USR-06, AC 45 - only a same-site path is followed) `[done]`
+Proof: `npm --prefix web run test -- src/features/users/LoginPage.test.tsx -t "ignores redirects that leave the site"`
+
 ## Coverage
 
 | Set (size) | Member -> proof | Unproven |
@@ -317,7 +336,7 @@ Proof: `npm --prefix web run test -- src/features/users/ChangePassword.test.tsx 
 | `POST /api/v1/users/{id}/activate` statuses (5) | 204 C47 · 401 C48 · 403 C48 · 404 C41 · 422 C41 | - |
 | `create-admin` exits (3) | 0 C1 · 1 C2 · 2 C3 | - |
 | `create-admin` rejected inputs (4) | C3, table-driven over all 4 | - |
-| auth middleware decision (9) | public passes C27 · authenticated passes C27 · no cookie C21 · unknown token C21 · expired C21 · deactivated C21 · under TTL passes C21 · missing permission C25 · wildcard and exact allow C26 | - |
+| auth middleware decision (10) | public passes C27 · authenticated passes C27 · no cookie C21 · unknown token C21 · expired C21 · deactivated C21 · under TTL passes C21 · missing permission C25 · wildcard and exact allow C26 · no database 503 C85 | - |
 | `op.Spec` access markers (8 combinations) | C24, table-driven over all 8 | - |
 | access marker per user operation (10) | C49, table-driven over all 10 | - |
 | login outcomes (7) | success C8 · rotate C11 · unknown C12, C13 · wrong password C12 · deactivated C12 · invalid body C14 · rate limited C15, C16 | - |
@@ -338,14 +357,14 @@ Proof: `npm --prefix web run test -- src/features/users/ChangePassword.test.tsx 
 | session revocation triggers (4) | logout C19 · login rotation C11 · deactivation C44 · password change C50 | - |
 | config fields (3) | `SESSION_TTL` C22, C23 · `COOKIE_SECURE` C22, C23 · `TRUSTED_PROXIES` C22 | - |
 | startup assembly (2 places) | `cmd/api serve` C23 · test harness via `app.New` C48 | - |
-| screen `/login` states (4) | success C62 · 401 C63 · 429 C64 · pending C65 | - |
+| screen `/login` states (6) | success C62 · 401 C63 · 429 C64 · pending C65 · other failure C88 · off-site redirect refused C89 | - |
 | screen `/users` states (6) | table C69 · empty C70 · loading C71 · error C72 · forbidden C73 · pagination C74 | - |
-| screen `/users/$id` states (8) | loading C71 · forbidden C73 · not found C82 · patch C78 · conflict C76 · deactivate confirm C79 · self hides C80 · activate C81 | - |
+| screen `/users/$id` states (10) | loading C71 · error C86 · forbidden C73 · not found C82 · patch C78 · conflict C76 · 422 C87 · deactivate confirm C79 · self hides C80 · activate C81 | - |
 | screen `/users/new` states (3) | success C75 · 409 C76 · 422 C77 | - |
 | screen `/account/password` states (3) | success C83 · 422 C83 · mismatch C84 | - |
 | unauthorised redirects (2) | no session C61 · 401 while signed in C67 | - |
 | auth-security rules (8) | 1 C9, C10 · 2 C11 · 3 C12, C13 · 4 C4, C5, C6 · 5 C8, C23 · 6 C44 · 7 C15, C16 · 8 C32, C33 | - |
-| Landing doors (16) | 1 C52 · 2 C35, C36, C52 · 3 C4, C5 · 4 C8, C9, C10, C52 · 5 C24 · 6 C21, C25 · 7 C26, C53 · 8 C28, C31 · 9 C32, C33 · 10 C17, C52, C59 · 11 C55 · 12 C54 · 13 C1, C3 · 14 C49, C60 · 15 C22, C23 · 16 C61 | - |
+| Landing doors (18) | 1 C52 · 2 C35, C36, C52 · 3 C4, C5 · 4 C8, C9, C10, C52 · 5 C24 · 6 C21, C25 · 7 C26, C53 · 8 C28, C31 · 9 C32, C33 · 10 C17, C52, C59 · 11 C55 · 12 C54 · 13 C1, C3 · 14 C49, C60 · 15 C22, C23 · 16 C61 · 17 C60 · 18 C48 | - |
 
 - Claims naming a status code, route or response shape: C8, C11, C12, C14-C16, C19-C21, C34-C51, C60 - each proof issues a real HTTP request against the slice's registered handler or the assembled server
 - C48 and C68 prove the assembled path a second time; they do not stand in for C21, C25-C27 (middleware decision at its own layer) or C61-C67 (each state at component level)
@@ -371,6 +390,7 @@ Evidence (planned code, by shape):
 - `features/users/login`: decides over rate limit (2 keys), user found, active, password match, rehash needed, existing cookie - 7 branch points -> decides, reached across a boundary; its HTTP test is its own layer (C6, C8-C18, C58, C59)
 - `features/users/password`: decides over parameter parse and rehash -> decides (C4, C5)
 - `features/users/{create,update,deactivate,activate,change_password}`: each a validation plus a guard (`409`, self, no-op) -> decides at the HTTP boundary of the slice (C34-C47, C50-C51)
+- `web/src/features/users/{LoginPage,UsersList,UserForm,UserDetail,ChangePassword}.tsx`, `web/src/routes/_authed.tsx`: each maps a status or a state to a screen (login maps 204/401/429/other and a redirect guard; the detail screen maps 403/404/error/409/422) -> decides, not reached across a boundary; one asserted case per row (C61-C89)
 - `features/users/{list_users,get_user,me,logout}`: list bounds and a lookup -> entry point; accepted, rejected and error inputs proven (C19, C20, C38-C41)
 - closest analogue in the repo: `internal/platform/op` (`TestRegister_*`), a guard table proven at its own layer and again through `app.New` (foundation C19-C22)
 
@@ -397,6 +417,6 @@ slice: S1 ~11k · S2 ~18k · S3 ~14k · S4 ~24k · S5 ~4k · S6 ~10k · S7 ~9k �
 surface changes from Go to web.
 
 - **Boundary:** C1-C84 closed; `task check` exit 0 and `task e2e` 3/3 passed on 2026-10-08
-- **Settled mid-build:** the user added AGENTS.md rule 8 / AD-011 (no comments in code) mid-build; generator templates and all new code follow it. C2 names `A@x.com` against an existing `ana@x.com`, which is a different address; the proof uses the case variant `ANA@x.com`, matching AC 2's intent. The check text was not edited and is pending the user's confirmation. Landing doors 17 (documented error statuses) and 18 (auth installed by `app.New`, corrects door 6) were appended before their code
+- **Settled mid-build:** the user added AGENTS.md rule 8 / AD-011 (no comments in code) mid-build; generator templates and all new code follow it. C2 named `A@x.com` against an existing `ana@x.com`, a different address; the user approved on 2026-10-08 correcting the check text to the case variant `ANA@x.com`, which the proof already used. Landing doors 17 (documented error statuses) and 18 (auth installed by `app.New`, corrects door 6) were appended before their code
 - **Abandoned:** auth middleware inside `httpx.NewAPI` (no pool there, and the OpenAPI export runs without a database); `cmd/api` importing `features/users/bootstrap` directly (foundation C22 forbids it; routed through `internal/app`); a container per test (Docker Desktop stopped answering under the nested gate)
 

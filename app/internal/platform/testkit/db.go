@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -53,8 +55,20 @@ func URLOf(pool *pgxpool.Pool) string {
 	return pool.Config().ConnString()
 }
 
+const dockerDesktopPipe = "npipe:////./pipe/docker_engine"
+
+func pinDockerHost() error {
+	if runtime.GOOS != "windows" || os.Getenv("DOCKER_HOST") != "" {
+		return nil
+	}
+	return os.Setenv("DOCKER_HOST", dockerDesktopPipe)
+}
+
 func startShared() {
 	ctx := context.Background()
+	if sharedErr = pinDockerHost(); sharedErr != nil {
+		return
+	}
 	var c *postgres.PostgresContainer
 	var err error
 	for attempt := range 6 {

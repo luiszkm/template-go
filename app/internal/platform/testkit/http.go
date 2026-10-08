@@ -42,6 +42,14 @@ func NewAPI(t *testing.T, pool *pgxpool.Pool, o APIOptions) (huma.API, http.Hand
 	return api, httpx.WithClientIP(httpx.Chain(mux, DiscardLogger()), o.TrustedProxies), d
 }
 
+func NewAPIWithoutDatabase(t *testing.T) (huma.API, http.Handler, deps.Deps) {
+	t.Helper()
+	mux := http.NewServeMux()
+	api := httpx.NewAPI(mux)
+	auth.Install(api, nil, 12*time.Hour)
+	return api, httpx.Chain(mux, DiscardLogger()), deps.Deps{Logger: DiscardLogger(), SessionTTL: 12 * time.Hour}
+}
+
 type User struct {
 	ID     uuid.UUID
 	Email  string

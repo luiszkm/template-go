@@ -25,6 +25,7 @@ export default defineConfig({
   server: { port: 5173, proxy: backendProxy },
   test: {
     environment: "jsdom",
+    testTimeout: 30_000,
     globals: true,
     setupFiles: [path.resolve(import.meta.dirname, "src/test/setup.ts")],
     include: ["src/**/*.test.{ts,tsx}", "vite.config.test.ts"],

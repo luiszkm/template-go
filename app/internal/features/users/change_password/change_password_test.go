@@ -67,6 +67,8 @@ func TestChangePassword_AuditsWithoutPassword(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, http.StatusNoContent, change(t, h, u.Cookie, old, "senha-nova-1234").Code)
+	require.Equal(t, 1, userstest.Count(t, pool,
+		`SELECT count(*) FROM audit_events WHERE action = 'user.password_changed' AND actor_id = $1`, id))
 	var after string
 	require.NoError(t, pool.QueryRow(t.Context(),
 		`SELECT coalesce(before::text, '') || coalesce(after::text, '') FROM audit_events WHERE action = 'user.password_changed' AND actor_id = $1`,

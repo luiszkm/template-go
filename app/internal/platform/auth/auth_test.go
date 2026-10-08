@@ -119,3 +119,21 @@ func TestMiddleware_AuthenticatedAndPublic(t *testing.T) {
 	require.Equal(t, http.StatusOK, get(t, h, "/public", nil))
 	require.EqualValues(t, 2, calls.Load())
 }
+
+func TestMiddleware_NoDatabase503(t *testing.T) {
+	api, h, _ := testkit.NewAPIWithoutDatabase(t)
+	var calls atomic.Int32
+	handler := func(context.Context, *empty) (*ok, error) { calls.Add(1); return &ok{}, nil }
+	require.NoError(t, op.Register(api, op.Spec{ID: "public", Method: http.MethodGet, Path: "/public", Public: true}, handler))
+	require.NoError(t, op.Register(api, op.Spec{ID: "authn", Method: http.MethodGet, Path: "/authn", Authenticated: true}, handler))
+	require.NoError(t, op.Register(api, op.Spec{ID: "perm", Method: http.MethodGet, Path: "/perm", Permission: "x:y"}, handler))
+
+	for _, path := range []string{"/authn", "/perm"} {
+		rec := testkit.Do(t, h, testkit.Request{Method: http.MethodGet, Path: path,
+			Cookie: &http.Cookie{Name: auth.CookieName, Value: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}})
+		require.Equal(t, http.StatusServiceUnavailable, rec.Code, path)
+		require.Equal(t, "application/problem+json", rec.Header().Get("Content-Type"))
+	}
+	require.Zero(t, calls.Load())
+	require.Equal(t, http.StatusOK, get(t, h, "/public", nil))
+}
