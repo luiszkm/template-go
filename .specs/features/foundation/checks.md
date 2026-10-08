@@ -5,7 +5,7 @@ Plan: `.specs/features/foundation/plan.md`
 
 ## Intent
 
-55 checks in 6 slices · 11 one-way doors · 0 open
+68 checks in 7 slices · 11 one-way doors · 0 open
 
 Repositório greenfield: nenhum comando existe ainda. Todo `Proof:` abaixo usa comandos que esta feature cria
 (`go -C app test`, `npm --prefix web run test`, `task ...`); o build cria o comando antes de rodar a prova.
@@ -196,6 +196,47 @@ Proof: `go -C app test ./archtest -run '^TestCIWorkflow_RunsCheckAndE2E$'`
 **C55** - `task check:fast` runs format check, `go vet`, archtest and web typecheck, and exits non-zero when any fails (FND-06, AC 38) `[done]`
 Proof: `go -C app test ./archtest -run '^TestTaskfile_CheckFastSteps$'`
 
+### S7 - Correções da verificação rodada 1 (aprovadas pelo usuário em 2026-10-08) · ~14 files · ~40 KB · ~10k
+
+**C56** - With an embedded build that has no `index.html`, the `webui` handler answers `GET /users/42` with `404` and content type `application/problem+json` (FND-02, AC 8, door 9)
+Proof: `go -C app test ./internal/platform/webui -run '^TestHandler_MissingBuildIs404Problem$'`
+
+**C57** - Every Problem response carries `instance` equal to the request path, for a `404` (router), a `500` (panic) and a `503` (Huma error) (FND-02, AC 8, door 3)
+Proof: `go -C app test ./internal/platform/httpx -run '^TestProblem_InstanceIsRequestPath$'`
+
+**C58** - In the assembled server `GET /api/docs` returns `200` with a `text/html` content type (door 2)
+Proof: `go -C app test ./internal/app -run '^TestRouting_DocsServed$'`
+
+**C59** - Registering a spec with an empty `ID` returns an error naming its method and path (FND-02, AC 16)
+Proof: `go -C app test ./internal/platform/op -run '^TestRegister_RejectsMissingID$'`
+
+**C60** - `GET /readyz` with no database configured returns `503` with an `application/problem+json` body (FND-01, AC 3)
+Proof: `go -C app test ./internal/platform/health -run '^TestReadyz_503WhenDatabaseNotConfigured$'`
+
+**C61** - A handler panicking with `http.ErrAbortHandler` is re-panicked by Recover: no `500` body is written and no `ERROR` entry is logged (FND-02, AC 10, AC 11)
+Proof: `go -C app test ./internal/platform/httpx -run '^TestRecover_RepanicsAbortHandler$'`
+
+**C62** - `api` with an unknown subcommand exits `2` and writes the usage line to stderr (FND-01, AC 4)
+Proof: `go -C app test ./cmd/api -run '^TestRun_UnknownCommandExits2$'`
+
+**C63** - `api migrate up` against an unreachable database exits `1` and writes `migrate up:` to stderr (FND-01, AC 6)
+Proof: `go -C app test ./cmd/api -run '^TestMigrateUp_UnreachableDatabaseExits1$'`
+
+**C64** - The gofmt hook never blocks the agent: a malformed JSON payload, a missing file, and a `.go` file that does not parse each exit `0`, write a message to stderr, and leave files unchanged (FND-06, AC 37)
+Proof: `go -C app test ./cmd/agenthooks -run '^TestGofmtHook_NeverBlocks$'`
+
+**C65** - In a temp copy with one unformatted `.go` file, `task check` and `task check:fast` each exit non-zero (FND-03, AC 23; FND-06, AC 38)
+Proof: `go -C app test ./archtest -run '^TestTaskfile_GatesFailOnFailingStep$'`
+
+**C66** - The built `newslice` binary exits `1` for an invalid name and for an existing slice (FND-04, AC 28, AC 29)
+Proof: `go -C app test ./cmd/newslice -run '^TestMain_FailuresExit1$'`
+
+**C67** - A database that never answers yields `503` from `/readyz` once the configured timeout elapses, not when the driver gives up (FND-01, AC 3)
+Proof: `go -C app test ./internal/platform/health -run '^TestReadyz_503WhenDatabaseHangs$'`
+
+**C68** - A `POST` to a path outside `/api/` (e.g. `/healthz`, `/users`) gets `405` with an `application/problem+json` body, never the SPA (FND-02, AC 8, door 9)
+Proof: `go -C app test ./internal/app -run '^TestRouting_NonGetOutsideAPIIs405Problem$'`
+
 ## Coverage
 
 | Set (size) | Member -> proof | Unproven |
@@ -204,13 +245,13 @@ Proof: `go -C app test ./archtest -run '^TestTaskfile_CheckFastSteps$'`
 | `GET /readyz` statuses (2) | 200 C2 · 503 C3 | - |
 | `GET /api/openapi.json` statuses (1) | 200 C18 | - |
 | `ANY /api/*` sem rota statuses (1) | 404 C12 | - |
-| `GET /*` fora de `/api/` statuses (1) | 200 C44 | - |
-| problem+json fields (5) | C11, table-driven over all 5 | - |
+| `GET /*` fora de `/api/` statuses (2) | 200 C44 · 404 C56 | - |
+| problem+json fields (6) | `type` C11 · `title` C11 · `status` C11 · `detail` C11 · `request_id` C11 · `instance` C57 | - |
 | error statuses carrying problem+json (3) | 404 C11 · 500 C11 · 503 C11 | - |
 | request log keys (8) | C17, table-driven over all 8 | - |
 | `X-Request-ID` cases (2) | present C15 · absent C16 | - |
 | mutating methods requiring audit (4) | C20, table-driven over all 4 | - |
-| `op.Register` decision (3) | missing permission C19 · mutation without audit C20 · valid specs accepted C21 | - |
+| `op.Register` decision (4) | missing ID C59 · missing permission C19 · mutation without audit C20 · valid specs accepted C21 | - |
 | startup assembly (2 places) | `cmd/api` via `app.New` C22 · test harness via `app.New` C22 | - |
 | shutdown paths (2) | drains in-flight C5 · bounded by timeout C6 | - |
 | migration runs (3) | pending applied C7 · rerun no-op C8 · serve never migrates C9 | - |
@@ -221,12 +262,18 @@ Proof: `go -C app test ./archtest -run '^TestTaskfile_CheckFastSteps$'`
 | generated files (3) | `endpoint.go` C33 · `queries.sql` C33 · `<n>_test.go` C33 | - |
 | invalid generator inputs (4) | C38, table-driven over all 4 | - |
 | screen `/` states (4) | loading C42 · online C39 · offline C40 · retry C41 | - |
-| `webui` routing (3) | SPA fallback C44 · static file C45 · API/health excluded C46 | - |
+| `webui` routing (5) | SPA fallback C44 · static file C45 · API/health excluded C46 · missing build C56 · non-GET C68 | - |
 | dev proxy prefixes (3) | C48, table-driven over all 3 | - |
 | Stop hook branches (3) | failing C51 · passing C51 · `stop_hook_active` C51 | - |
 | agent rule files (2) | Cursor C53 · Windsurf C53 | - |
 | CI steps (2) | `task check` C54 · `task e2e` C54 | - |
-| Landing doors (13) | 1 C31 · 2 C36 · 3 C11 · 4 C15 · 5 C19 · 6 C33 · 7 C23 · 8 C10 · 9 C44 · 10 C32 · 11 C22 · 12 C36 · 13 C31 | - |
+| `/readyz` branches (4) | ready C2 · DB down C3 · DB hangs C67 · DB not configured C60 | - |
+| Recover branches (2) | panic -> 500 C13 · `ErrAbortHandler` re-panicked C61 | - |
+| `api` command exits (4) | serve config error 1 C4 · migrate ok 0 C7 · migrate runtime error 1 C63 · unknown command 2 C62 | - |
+| gofmt hook branches (5) | formats `.go` C50 · ignores non-`.go` C50 · bad payload C64 · missing file C64 · unparseable `.go` C64 | - |
+| gate failure exit (2) | `task check` C65 · `task check:fast` C65 | - |
+| `newslice` process exits (2) | invalid name C66 · existing slice C66 | - |
+| Landing doors (13) | 1 C31 · 2 C36, C58 · 3 C11 · 4 C15 · 5 C19 · 6 C33 · 7 C23 · 8 C10 · 9 C44 · 10 C32 · 11 C22 · 12 C36 · 13 C31 | - |
 
 - Claims naming a status code, route or response shape: C1-C3, C11-C13, C18, C36, C44-C46 - each proof issues a real HTTP request against a handler or the assembled server
 - C49 is a second proof of AC 30 at the browser level; it does not stand in for C39-C42, which assert each state at the component level

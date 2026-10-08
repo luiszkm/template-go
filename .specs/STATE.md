@@ -18,9 +18,9 @@
 ## Handoff
 
 **Feature**: foundation
-**Where**: plan.md approved; checks.md C1-C55 written, `validate_checks.py` 0 errors; no code yet
+**Where**: C1-C55 built and green at `14cada0` (`task check` exit 0, `task e2e` 2/2); independent Verifier running over `a927e8b..HEAD`
 **In progress**: none
-**Next step**: build - `git init` on `main`, then S1..S6 writing tests from the checks first
+**Next step**: read `.specs/features/foundation/verification.md`; on PASS, plan `users`
 **Blockers**: none
-**Uncommitted**: `.specs/`, `AGENTS.md`, `CLAUDE.md`
-**Branch**: no git repository yet
+**Uncommitted**: `.specs/STATE.md`
+**Branch**: `main` (local only, no remote)
