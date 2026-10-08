@@ -30,7 +30,7 @@ linters:
     rules:
       - path: _test\.go
         linters: [gosec]
-      - path: cmd/(agenthooks|fmtcheck|newslice|sqlcrun|webcopy)/
+      - path: (cmd/(agenthooks|fmtcheck|newslice|sqlcrun|webcopy)|archtest)/
         linters: [gosec]
 formatters:
   enable:

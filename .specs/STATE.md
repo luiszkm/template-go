@@ -14,7 +14,7 @@
 | AD-008 | Frontend in `web/`: React 19 + Vite + strict TypeScript + TanStack Router (file-based) + TanStack Query + shadcn/ui + Tailwind v4 + Zod + react-hook-form; API client generated from `app/openapi.json` (`openapi-typescript` + `openapi-fetch`); Vitest + Testing Library + Playwright; Biome | highest LLM accuracy; contract break becomes a compile error; rejected Angular (verbosity) and Next.js (Node server duplicates the Go backend) | active | 2026-10-07 |
 | AD-009 | `task check` (Taskfile) is the single gate, run locally and in CI: format, golangci-lint v2, sqlc diff, archtest, go test (testcontainers Postgres), OpenAPI export diff, web typecheck/lint/test | one command means an agent cannot pick a weaker subset | active | 2026-10-07 |
 | AD-010 | Spec workflow is `tlc-spec-lean` with `profile: standard` | catches unproven set members and tests that pass under a wrong implementation | active | 2026-10-07 |
-| AD-011 | Code carries no comments; only machine-read annotations (`//go:`, `//nolint:`, `-- +goose`, sqlc `-- name:`, generator markers, `biome-ignore`) | code must explain itself through names and shape; comments drift from the code and an LLM trusts them | active | 2026-10-08 |
+| AD-011 | Code carries no comments; only machine-read annotations (`//go:`, `//nolint:`, `-- +goose`, sqlc `-- name:`, generator markers, `biome-ignore`) | code must explain itself through names and shape; comments drift from the code and an LLM trusts them; enforced by `archtest.CheckComments` (2026-10-08) | active | 2026-10-08 |
 
 ## Handoff
 
