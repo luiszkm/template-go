@@ -92,6 +92,12 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: app/internal/features/users/change_password/change_password_test.go:72 (audit)
 - last seen: 2026-10-08T16:13:41Z
 
+### L-014 - Do not assert wall-clock latency ratios from a few samples in tests that run inside the gate; prove timing equivalence by counting the work done instead
+- signal: `gate_fail` · recurrence: 1 feature(s) · scope: `login` · harmful: 0
+- features: users
+- evidence: C13 - app/internal/features/users/login/login_test.go:224 failed in task check at fa85de1 (login)
+- last seen: 2026-10-08T17:59:48Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 14,
+  "next_id": 15,
   "lessons": [
     {
       "id": "L-001",
@@ -238,6 +238,24 @@
       ],
       "created": "2026-10-08T16:13:41Z",
       "last_seen": "2026-10-08T16:13:41Z"
+    },
+    {
+      "id": "L-014",
+      "key": "gate_fail::do not assert wall clock latency ratios from a few samples in tests that run inside the gate prove timing equivalence by counting the work done instead",
+      "text": "Do not assert wall-clock latency ratios from a few samples in tests that run inside the gate; prove timing equivalence by counting the work done instead",
+      "signal": "gate_fail",
+      "scope": "login",
+      "status": "candidate",
+      "features": [
+        "users"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C13 - app/internal/features/users/login/login_test.go:224 failed in task check at fa85de1 (login)"
+      ],
+      "created": "2026-10-08T17:59:48Z",
+      "last_seen": "2026-10-08T17:59:48Z"
     }
   ]
 }

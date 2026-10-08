@@ -59,9 +59,8 @@ Proof: `go -C app test ./internal/features/users/login -run '^TestLogin_RotatesE
 **C12** - Unknown email, wrong password and deactivated user each return `401` with `detail` `invalid email or password`, and the three bodies are equal once `request_id` and `instance` are removed (USR-02, AC 9) `[done]`
 Proof: `go -C app test ./internal/features/users/login -run '^TestLogin_FailuresAreIndistinguishable$'`
 
-**C13** - A login for an unknown email calls the injected verifier exactly once, against the fixed dummy hash; over 3 runs the median latency of unknown-email logins is at least half the median of wrong-password logins (USR-02, AC 10) `[done]`
+**C13** - A login for an unknown email calls the injected verifier exactly once, against the fixed dummy hash (USR-02, AC 10) `[done]`
 Proof: `go -C app test ./internal/features/users/login -run '^TestLogin_UnknownEmailVerifiesDummyHash$'`
-Proof: `go -C app test ./internal/features/users/login -run '^TestLogin_UnknownEmailTimingMatches$'`
 
 **C14** - Login returns `422` for each of 4 bodies: `email` `nope`, `email` absent, `password` empty, `password` of 129 characters (USR-02, AC 11) `[done]`
 Proof: `go -C app test ./internal/features/users/login -run '^TestLogin_InvalidBody422$'`
@@ -419,4 +418,4 @@ surface changes from Go to web.
 - **Boundary:** C1-C84 closed; `task check` exit 0 and `task e2e` 3/3 passed on 2026-10-08
 - **Settled mid-build:** the user added AGENTS.md rule 8 / AD-011 (no comments in code) mid-build; generator templates and all new code follow it. C2 named `A@x.com` against an existing `ana@x.com`, a different address; the user approved on 2026-10-08 correcting the check text to the case variant `ANA@x.com`, which the proof already used. Landing doors 17 (documented error statuses) and 18 (auth installed by `app.New`, corrects door 6) were appended before their code
 - **Abandoned:** auth middleware inside `httpx.NewAPI` (no pool there, and the OpenAPI export runs without a database); `cmd/api` importing `features/users/bootstrap` directly (foundation C22 forbids it; routed through `internal/app`); a container per test (Docker Desktop stopped answering under the nested gate)
-
+- **Settled mid-build (round 2):** the user approved on 2026-10-08 dropping C13's latency-ratio clause and its proof `TestLogin_UnknownEmailTimingMatches`. The proof compared wall-clock medians of 3 samples and gave different results on the same commit under the gate's load (verification round 2). AC 10 is settled by counting the argon2id verification against the dummy hash

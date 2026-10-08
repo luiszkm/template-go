@@ -195,35 +195,6 @@ func TestLogin_UnknownEmailVerifiesDummyHash(t *testing.T) {
 	require.Equal(t, []string{password.DummyHash()}, hashes)
 }
 
-func median(t *testing.T, runs int, f func() *httptest.ResponseRecorder) time.Duration {
-	t.Helper()
-	var d []time.Duration
-	for range runs {
-		start := time.Now()
-		require.Equal(t, http.StatusUnauthorized, f().Code)
-		d = append(d, time.Since(start))
-	}
-	slices.Sort(d)
-	return d[len(d)/2]
-}
-
-func TestLogin_UnknownEmailTimingMatches(t *testing.T) {
-	pool := testkit.MigratedDB(t)
-	h := serve(t, pool, testkit.APIOptions{})
-	userstest.CreateUser(t, pool, "ana@x.com", pw)
-
-	n := 0
-	unknown := median(t, 3, func() *httptest.ResponseRecorder {
-		n++
-		return post(t, h, attempt{email: fmt.Sprintf("nobody%d@x.com", n), password: pw, remoteAddr: fmt.Sprintf("192.0.2.%d:1", n)})
-	})
-	wrong := median(t, 3, func() *httptest.ResponseRecorder {
-		n++
-		return post(t, h, attempt{email: "ana@x.com", password: "senha-errada-123", remoteAddr: fmt.Sprintf("192.0.2.%d:1", n)})
-	})
-	require.GreaterOrEqual(t, unknown, wrong/2, "unknown %v, wrong %v", unknown, wrong)
-}
-
 func TestLogin_InvalidBody422(t *testing.T) {
 	pool := testkit.MigratedDB(t)
 	h := serve(t, pool, testkit.APIOptions{})
