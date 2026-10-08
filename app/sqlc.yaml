@@ -156,3 +156,19 @@ sql:
         package: db
         out: internal/features/rbac/assign_roles/db
         sql_package: pgx/v5
+  - engine: postgresql
+    schema: migrations
+    queries: internal/features/audit/list_events/queries.sql
+    gen:
+      go:
+        package: db
+        out: internal/features/audit/list_events/db
+        sql_package: pgx/v5
+  - engine: postgresql
+    schema: migrations
+    queries: internal/features/audit/get_event/queries.sql
+    gen:
+      go:
+        package: db
+        out: internal/features/audit/get_event/db
+        sql_package: pgx/v5

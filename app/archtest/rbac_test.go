@@ -2,7 +2,9 @@ package archtest_test
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -33,5 +35,17 @@ func TestWebSharedSession_Moved(t *testing.T) {
 	for _, gone := range []string{"web/src/features/users/session.ts", "web/src/features/users/problems.ts"} {
 		_, err := os.Stat(filepath.Join(repoRoot, gone))
 		require.ErrorIs(t, err, os.ErrNotExist, gone)
+	}
+}
+
+func TestImports_AuditReadsOnly(t *testing.T) {
+	out, err := exec.CommandContext(t.Context(), "go", "list", "-deps", "-test", "-f", "{{.ImportPath}}", "../internal/features/audit/...").Output()
+	require.NoError(t, err)
+	for line := range strings.Lines(string(out)) {
+		pkg := strings.TrimSpace(line)
+		require.NotEqual(t, "github.com/luiszkm/template-go/internal/platform/audit", pkg)
+		if strings.Contains(pkg, "/internal/features/") {
+			require.Contains(t, pkg, "/internal/features/audit", pkg)
+		}
 	}
 }

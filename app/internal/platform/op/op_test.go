@@ -99,3 +99,12 @@ func TestPermissions_ListsRegisteredSortedUnique(t *testing.T) {
 	require.NoError(t, op.Register(api, op.Spec{ID: "p", Method: http.MethodGet, Path: "/p", Public: true}, handler))
 	require.Equal(t, []op.Permission{"a:read", "b:read"}, op.Permissions(api))
 }
+
+func TestAuditActions_SortedDistinct(t *testing.T) {
+	api := newAPI(t)
+	require.NoError(t, op.Register(api, op.Spec{ID: "b1", Method: http.MethodPost, Path: "/b1", Permission: "x:y", AuditAction: "b.done"}, handler))
+	require.NoError(t, op.Register(api, op.Spec{ID: "a", Method: http.MethodPost, Path: "/a", Permission: "x:y", AuditAction: "a.done"}, handler))
+	require.NoError(t, op.Register(api, op.Spec{ID: "b2", Method: http.MethodDelete, Path: "/b2", Permission: "x:y", AuditAction: "b.done"}, handler))
+	require.NoError(t, op.Register(api, op.Spec{ID: "read", Method: http.MethodGet, Path: "/read", Permission: "x:y"}, handler))
+	require.Equal(t, []string{"a.done", "b.done"}, op.AuditActions(api))
+}

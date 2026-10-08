@@ -98,6 +98,22 @@ func Permissions(api huma.API) []Permission {
 	return slices.Compact(out)
 }
 
+func AuditActions(api huma.API) []string {
+	out := []string{}
+	for _, item := range api.OpenAPI().Paths {
+		for _, o := range []*huma.Operation{item.Get, item.Put, item.Post, item.Delete, item.Options, item.Head, item.Patch, item.Trace} {
+			if o == nil {
+				continue
+			}
+			if a, ok := o.Metadata[MetaAuditAction].(string); ok && a != "" {
+				out = append(out, a)
+			}
+		}
+	}
+	slices.Sort(out)
+	return slices.Compact(out)
+}
+
 func (s Spec) documentedErrors() []int {
 	errs := slices.Clone(s.Errors)
 	if !s.Public {

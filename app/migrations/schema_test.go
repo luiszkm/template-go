@@ -66,3 +66,19 @@ func TestSchema_RoleNameUniqueIgnoringCase(t *testing.T) {
 	require.NoError(t, pool.QueryRow(t.Context(), `SELECT name FROM roles WHERE lower(name) = 'financeiro'`).Scan(&name))
 	require.Equal(t, "Financeiro", name)
 }
+
+func TestSchema_AuditIndexes(t *testing.T) {
+	pool := testkit.MigratedDB(t)
+	rows, err := pool.Query(t.Context(), `SELECT indexname FROM pg_indexes WHERE tablename = 'audit_events'`)
+	require.NoError(t, err)
+	var names []string
+	for rows.Next() {
+		var n string
+		require.NoError(t, rows.Scan(&n))
+		names = append(names, n)
+	}
+	require.NoError(t, rows.Err())
+	for _, want := range []string{"audit_events_actor_idx", "audit_events_resource_idx", "audit_events_action_idx", "audit_events_occurred_idx"} {
+		require.Contains(t, names, want)
+	}
+}
