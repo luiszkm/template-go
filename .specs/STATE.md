@@ -18,10 +18,10 @@
 
 ## Handoff
 
-**Feature**: users - done
-**Where**: C1-C89 built and green; independent Verifier round 3 PASS at `4124e2f` (`task check` exit 0, `task e2e` pass, fault killed, `validate_verification.py` exit 0). Round 1 FAIL closed by C85-C89 (`fa85de1`); round 2 FAIL (flaky C13 timing proof) closed by dropping that proof with user approval (`4124e2f`)
+**Feature**: rbac - done
+**Where**: C1-C51 built and green; independent Verifier round 3 PASS at `7d0cae6` (all proofs re-run, `task e2e -- rbac.spec.ts` pass, 5 faults killed, `validate_verification.py` exit 0; `task check` exit 0 before the commit). Round 1 FAIL (surviving last-admin race mutant, C25 subset assertion, 5 unproven states) closed by `7ad1473`, C25 rewritten to "Surface plus 500" with user approval; round 2 FAIL (C21 gate blocked requests in authentication) closed by `7d0cae6`
 **In progress**: none
-**Next step**: plan `rbac` (role management endpoints; role changes must delete the user's sessions in the same transaction, auth-security rule 6) or `audit` (read-only audit log)
+**Next step**: plan `audit` (read-only audit log API and screen; AD-007)
 **Blockers**: none
 **Uncommitted**: `.claude/skills/auth-security/`, `.cursor/skills/auth-security/` (untracked, user-added)
 **Branch**: `main` (local only, no remote)

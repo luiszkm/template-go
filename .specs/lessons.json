@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 23,
+  "next_id": 24,
   "lessons": [
     {
       "id": "L-001",
@@ -402,6 +402,24 @@
       ],
       "created": "2026-10-08T21:17:22Z",
       "last_seen": "2026-10-08T21:17:22Z"
+    },
+    {
+      "id": "L-023",
+      "key": "spec_precision_gap::to confirm a concurrency claim list the ungranted locks pg stat activity joined to pg locks at the moment the gate releases",
+      "text": "To confirm a concurrency claim, list the ungranted locks (pg_stat_activity joined to pg_locks) at the moment the gate releases",
+      "signal": "spec_precision_gap",
+      "scope": "concurrency",
+      "status": "candidate",
+      "features": [
+        "rbac"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C21 round 3 - assign_roles_test.go:210 (concurrency)"
+      ],
+      "created": "2026-10-08T21:36:44Z",
+      "last_seen": "2026-10-08T21:36:44Z"
     }
   ]
 }

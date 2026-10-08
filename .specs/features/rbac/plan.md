@@ -142,12 +142,12 @@ mudaram cai na mesma transação.
 
 | ID | Slice | Criteria | Status |
 | --- | --- | --- | --- |
-| RBAC-01 | S1 | 1, 2, 3, 4 | Implementing |
-| RBAC-02 | S2 | 5, 6, 7, 8, 9, 10, 11, 12, 13 | Implementing |
-| RBAC-03 | S3 | 14, 15, 16, 17, 18, 19, 20, 21 | Implementing |
-| RBAC-04 | S4 | 22, 23 | Implementing |
-| RBAC-05 | S5 | 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36 | Implementing |
-| RBAC-06 | S6 | 37, 38, 39, 40, 41 | Implementing |
+| RBAC-01 | S1 | 1, 2, 3, 4 | Verified |
+| RBAC-02 | S2 | 5, 6, 7, 8, 9, 10, 11, 12, 13 | Verified |
+| RBAC-03 | S3 | 14, 15, 16, 17, 18, 19, 20, 21 | Verified |
+| RBAC-04 | S4 | 22, 23 | Verified |
+| RBAC-05 | S5 | 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36 | Verified |
+| RBAC-06 | S6 | 37, 38, 39, 40, 41 | Verified |
 
 ## Observable
 

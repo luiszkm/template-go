@@ -144,6 +144,12 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: C21 round 2 (checks)
 - last seen: 2026-10-08T21:17:22Z
 
+### L-023 - To confirm a concurrency claim, list the ungranted locks (pg_stat_activity joined to pg_locks) at the moment the gate releases
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `concurrency` · harmful: 0
+- features: rbac
+- evidence: C21 round 3 - assign_roles_test.go:210 (concurrency)
+- last seen: 2026-10-08T21:36:44Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.
