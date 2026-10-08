@@ -17,6 +17,7 @@ Single source of rules for every coding agent (Claude Code and Cursor). Project 
 5. Errors are RFC 9457 Problem Details. Never invent another error shape.
 6. Frontend mirrors the backend: `web/src/features/<feature>/`. Call the API only through the generated client.
 7. Generated files (`sqlc`, OpenAPI, TS client) are never edited by hand — change the source and regenerate.
+8. No comments in code. Names, types and small functions carry the meaning; a comment that explains code means the code needs a better name or shape. Only machine-read annotations are allowed: `//go:` directives, `//nolint:<linter>`, `-- +goose`, sqlc `-- name:`, generator markers (`// slices:imports`, `// features:register`) and `biome-ignore`.
 
 ## Test policy
 
