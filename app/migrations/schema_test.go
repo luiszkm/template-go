@@ -56,3 +56,13 @@ func TestSchema_AdminRoleSeeded(t *testing.T) {
 	require.NoError(t, rows.Err())
 	require.Equal(t, []string{"*"}, perms)
 }
+
+func TestSchema_RoleNameUniqueIgnoringCase(t *testing.T) {
+	pool := testkit.MigratedDB(t)
+	err := exec(t, pool, `INSERT INTO roles (name) VALUES ('ADMIN')`)
+	require.ErrorContains(t, err, "23505")
+	require.NoError(t, exec(t, pool, `INSERT INTO roles (name) VALUES ('Financeiro')`))
+	var name string
+	require.NoError(t, pool.QueryRow(t.Context(), `SELECT name FROM roles WHERE lower(name) = 'financeiro'`).Scan(&name))
+	require.Equal(t, "Financeiro", name)
+}

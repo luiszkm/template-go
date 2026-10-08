@@ -100,3 +100,59 @@ sql:
         package: db
         out: internal/features/users/bootstrap/db
         sql_package: pgx/v5
+  - engine: postgresql
+    schema: migrations
+    queries: internal/features/rbac/list_roles/queries.sql
+    gen:
+      go:
+        package: db
+        out: internal/features/rbac/list_roles/db
+        sql_package: pgx/v5
+  - engine: postgresql
+    schema: migrations
+    queries: internal/features/rbac/get_role/queries.sql
+    gen:
+      go:
+        package: db
+        out: internal/features/rbac/get_role/db
+        sql_package: pgx/v5
+  - engine: postgresql
+    schema: migrations
+    queries: internal/features/rbac/create_role/queries.sql
+    gen:
+      go:
+        package: db
+        out: internal/features/rbac/create_role/db
+        sql_package: pgx/v5
+  - engine: postgresql
+    schema: migrations
+    queries: internal/features/rbac/update_role/queries.sql
+    gen:
+      go:
+        package: db
+        out: internal/features/rbac/update_role/db
+        sql_package: pgx/v5
+  - engine: postgresql
+    schema: migrations
+    queries: internal/features/rbac/delete_role/queries.sql
+    gen:
+      go:
+        package: db
+        out: internal/features/rbac/delete_role/db
+        sql_package: pgx/v5
+  - engine: postgresql
+    schema: migrations
+    queries: internal/features/rbac/get_user_roles/queries.sql
+    gen:
+      go:
+        package: db
+        out: internal/features/rbac/get_user_roles/db
+        sql_package: pgx/v5
+  - engine: postgresql
+    schema: migrations
+    queries: internal/features/rbac/assign_roles/queries.sql
+    gen:
+      go:
+        package: db
+        out: internal/features/rbac/assign_roles/db
+        sql_package: pgx/v5
