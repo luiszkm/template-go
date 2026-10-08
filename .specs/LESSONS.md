@@ -38,6 +38,18 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: web/src/features/status/ApiStatus.test.tsx:21 (web)
 - last seen: 2026-10-08T13:23:08Z
 
+### L-005 - Prove every success arm of a binary's argument dispatch by running the built binary, not only its failure exits
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `cmd` · harmful: 0
+- features: foundation
+- evidence: verification.md round 3 gap 1 - app/cmd/agenthooks/main.go:29-32 (cmd)
+- last seen: 2026-10-08T13:48:49Z
+
+### L-006 - When a requirement names the literal command a hook runs, assert that literal, not only an injected substitute
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `cmd` · harmful: 0
+- features: foundation
+- evidence: C51 - app/cmd/agenthooks/main.go:32 (cmd)
+- last seen: 2026-10-08T13:48:50Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

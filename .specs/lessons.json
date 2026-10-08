@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 5,
+  "next_id": 7,
   "lessons": [
     {
       "id": "L-001",
@@ -76,6 +76,42 @@
       ],
       "created": "2026-10-08T13:23:08Z",
       "last_seen": "2026-10-08T13:23:08Z"
+    },
+    {
+      "id": "L-005",
+      "key": "ac_gap::prove every success arm of a binary s argument dispatch by running the built binary not only its failure exits",
+      "text": "Prove every success arm of a binary's argument dispatch by running the built binary, not only its failure exits",
+      "signal": "ac_gap",
+      "scope": "cmd",
+      "status": "candidate",
+      "features": [
+        "foundation"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md round 3 gap 1 - app/cmd/agenthooks/main.go:29-32 (cmd)"
+      ],
+      "created": "2026-10-08T13:48:49Z",
+      "last_seen": "2026-10-08T13:48:49Z"
+    },
+    {
+      "id": "L-006",
+      "key": "spec_precision_gap::when a requirement names the literal command a hook runs assert that literal not only an injected substitute",
+      "text": "When a requirement names the literal command a hook runs, assert that literal, not only an injected substitute",
+      "signal": "spec_precision_gap",
+      "scope": "cmd",
+      "status": "candidate",
+      "features": [
+        "foundation"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C51 - app/cmd/agenthooks/main.go:32 (cmd)"
+      ],
+      "created": "2026-10-08T13:48:50Z",
+      "last_seen": "2026-10-08T13:48:50Z"
     }
   ]
 }

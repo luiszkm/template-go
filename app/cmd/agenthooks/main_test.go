@@ -136,13 +136,7 @@ func TestGofmtHook_WriteFailureNeverBlocks(t *testing.T) {
 
 // C72
 func TestMain_DispatchFailuresExit1(t *testing.T) {
-	bin := filepath.Join(t.TempDir(), "agenthooks")
-	if runtime.GOOS == "windows" {
-		bin += ".exe"
-	}
-	build := exec.CommandContext(t.Context(), "go", "build", "-o", bin, ".")
-	out, err := build.CombinedOutput()
-	require.NoError(t, err, string(out))
+	bin := buildAgenthooks(t)
 
 	for name, args := range map[string][]string{"no argument": nil, "unknown hook": {"nope"}} {
 		t.Run(name, func(t *testing.T) {
@@ -152,4 +146,57 @@ func TestMain_DispatchFailuresExit1(t *testing.T) {
 			require.Equal(t, 1, exitErr.ExitCode())
 		})
 	}
+}
+
+func buildAgenthooks(t *testing.T) string {
+	t.Helper()
+	bin := filepath.Join(t.TempDir(), "agenthooks")
+	if runtime.GOOS == "windows" {
+		bin += ".exe"
+	}
+	out, err := exec.CommandContext(t.Context(), "go", "build", "-o", bin, ".").CombinedOutput()
+	require.NoError(t, err, string(out))
+	return bin
+}
+
+// C74
+func TestMain_GofmtArmFormats(t *testing.T) {
+	bin := buildAgenthooks(t)
+	goFile := filepath.Join(t.TempDir(), "x.go")
+	require.NoError(t, os.WriteFile(goFile, []byte("package x\nfunc  F( ) {\nreturn}\n"), 0o644))
+
+	cmd := exec.CommandContext(t.Context(), bin, "gofmt")
+	cmd.Stdin = payload(t, edit(goFile))
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, string(out))
+
+	got, err := os.ReadFile(goFile)
+	require.NoError(t, err)
+	require.Equal(t, "package x\n\nfunc F() {\n\treturn\n}\n", string(got))
+}
+
+// C75
+func TestMain_StopArmRunsTaskCheckFast(t *testing.T) {
+	bin := buildAgenthooks(t)
+	stubDir := t.TempDir()
+	argsFile := filepath.Join(stubDir, "args.txt")
+	if runtime.GOOS == "windows" {
+		stub := "@echo off\r\n>\"" + argsFile + "\" echo %*\r\nexit /b 3\r\n"
+		require.NoError(t, os.WriteFile(filepath.Join(stubDir, "task.bat"), []byte(stub), 0o755))
+	} else {
+		stub := "#!/bin/sh\necho \"$@\" > '" + argsFile + "'\nexit 3\n"
+		require.NoError(t, os.WriteFile(filepath.Join(stubDir, "task"), []byte(stub), 0o755))
+	}
+
+	cmd := exec.CommandContext(t.Context(), bin, "stop")
+	cmd.Stdin = strings.NewReader(`{"stop_hook_active":false}`)
+	cmd.Env = append(os.Environ(), "PATH="+stubDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	err := cmd.Run()
+	var exitErr *exec.ExitError
+	require.ErrorAs(t, err, &exitErr)
+	require.Equal(t, 2, exitErr.ExitCode())
+
+	args, err := os.ReadFile(argsFile)
+	require.NoError(t, err)
+	require.Equal(t, "check:fast", strings.TrimSpace(string(args)))
 }

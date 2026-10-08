@@ -5,7 +5,7 @@ Plan: `.specs/features/foundation/plan.md`
 
 ## Intent
 
-73 checks in 8 slices · 11 one-way doors · 0 open
+75 checks in 9 slices · 11 one-way doors · 0 open
 
 Repositório greenfield: nenhum comando existe ainda. Todo `Proof:` abaixo usa comandos que esta feature cria
 (`go -C app test`, `npm --prefix web run test`, `task ...`); o build cria o comando antes de rodar a prova.
@@ -254,6 +254,14 @@ Proof: `go -C app test ./cmd/agenthooks -run '^TestMain_DispatchFailuresExit1$'`
 **C73** - The web test setup sets Testing Library `asyncUtilTimeout` to `5000` ms, so every `findBy*` in the gate (C39 included) waits up to 5 s (FND-03, AC 23; FND-05, AC 30) `[done]`
 Proof: `npm --prefix web run test -- src/test/setup.test.ts -t "async timeout"`
 
+### S9 - Correções da verificação rodada 3 (aprovadas pelo usuário em 2026-10-08) · ~2 files · ~6 KB · ~2k
+
+**C74** - The built `agenthooks gofmt` binary, fed on stdin a PostToolUse payload naming a badly formatted `.go` file, rewrites that file to its `gofmt` output and exits `0` (FND-06, AC 37) `[done]`
+Proof: `go -C app test ./cmd/agenthooks -run '^TestMain_GofmtArmFormats$'`
+
+**C75** - The built `agenthooks stop` binary, fed `{"stop_hook_active":false}` with a stub `task` first on `PATH` that records its arguments and exits `3`, invokes `task` with exactly the arguments `check:fast` and exits `2` (FND-06, AC 38) `[done]`
+Proof: `go -C app test ./cmd/agenthooks -run '^TestMain_StopArmRunsTaskCheckFast$'`
+
 ## Coverage
 
 | Set (size) | Member -> proof | Unproven |
@@ -288,7 +296,7 @@ Proof: `npm --prefix web run test -- src/test/setup.test.ts -t "async timeout"`
 | Recover branches (2) | panic -> 500 C13 · `ErrAbortHandler` re-panicked C61 | - |
 | `api` command exits (5) | serve config error 1 C4 · migrate ok 0 C7 · migrate runtime error 1 C63 · unknown command 2 C62 · openapi error 1 C69 | - |
 | gofmt hook branches (6) | formats `.go` C50 · ignores non-`.go` C50 · bad payload C64 · missing file C64 · unparseable `.go` C64 · write failure C71 | - |
-| `agenthooks` dispatch exits (2) | no argument C72 · unknown hook C72 | - |
+| `agenthooks` dispatch arms (4) | no argument C72 · unknown hook C72 · `gofmt` C74 · `stop` runs `task check:fast` C75 | - |
 | gate failure exit (2) | `task check` C65 · `task check:fast` C65 | - |
 | `newslice` process exits (2) | invalid name C66 · existing slice C66 | - |
 | Landing doors (13) | 1 C31 · 2 C36, C58 · 3 C11 · 4 C15 · 5 C19 · 6 C33 · 7 C23 · 8 C10 · 9 C44 · 10 C32 · 11 C22 · 12 C36 · 13 C31 | - |
