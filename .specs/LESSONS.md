@@ -132,6 +132,18 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: AC 9 - app/internal/features/rbac/update_role (checks)
 - last seen: 2026-10-08T20:57:58Z
 
+### L-021 - Choose a LOCK TABLE mode for a concurrency gate that lets the auth and middleware reads through, and prove the waiters are inside their transactions (backend_xid set), not only that two are waiting
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `concurrency` · harmful: 0
+- features: rbac
+- evidence: C21 - app/internal/features/rbac/assign_roles/assign_roles_test.go:202 (concurrency)
+- last seen: 2026-10-08T21:17:21Z
+
+### L-022 - A killed mutant does not prove the mechanism a check describes; when the check claims a forced interleaving, verify where the requests wait
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `checks` · harmful: 0
+- features: rbac
+- evidence: C21 round 2 (checks)
+- last seen: 2026-10-08T21:17:22Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

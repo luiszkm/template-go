@@ -199,7 +199,7 @@ func TestAssignRoles_ConcurrentLastAdmin(t *testing.T) {
 
 		gate, err := f.pool.Begin(t.Context())
 		require.NoError(t, err)
-		_, err = gate.Exec(t.Context(), `LOCK TABLE sessions IN ACCESS EXCLUSIVE MODE`)
+		_, err = gate.Exec(t.Context(), `LOCK TABLE sessions IN EXCLUSIVE MODE`)
 		require.NoError(t, err)
 
 		codes := make([]int, 2)
@@ -209,7 +209,7 @@ func TestAssignRoles_ConcurrentLastAdmin(t *testing.T) {
 		}
 		require.Eventually(t, func() bool {
 			return rbactest.Count(t, f.pool,
-				`SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND datname = current_database()`) == 2
+				`SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND backend_xid IS NOT NULL AND datname = current_database()`) == 2
 		}, 10*time.Second, 20*time.Millisecond, "both requests must be inside their transactions before either commits")
 		require.NoError(t, gate.Commit(t.Context()))
 		wg.Wait()

@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 21,
+  "next_id": 23,
   "lessons": [
     {
       "id": "L-001",
@@ -366,6 +366,42 @@
       ],
       "created": "2026-10-08T20:57:58Z",
       "last_seen": "2026-10-08T20:57:58Z"
+    },
+    {
+      "id": "L-021",
+      "key": "spec_precision_gap::choose a lock table mode for a concurrency gate that lets the auth and middleware reads through and prove the waiters are inside their transactions backend xid set not only that two are waiting",
+      "text": "Choose a LOCK TABLE mode for a concurrency gate that lets the auth and middleware reads through, and prove the waiters are inside their transactions (backend_xid set), not only that two are waiting",
+      "signal": "spec_precision_gap",
+      "scope": "concurrency",
+      "status": "candidate",
+      "features": [
+        "rbac"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C21 - app/internal/features/rbac/assign_roles/assign_roles_test.go:202 (concurrency)"
+      ],
+      "created": "2026-10-08T21:17:21Z",
+      "last_seen": "2026-10-08T21:17:21Z"
+    },
+    {
+      "id": "L-022",
+      "key": "spec_precision_gap::a killed mutant does not prove the mechanism a check describes when the check claims a forced interleaving verify where the requests wait",
+      "text": "A killed mutant does not prove the mechanism a check describes; when the check claims a forced interleaving, verify where the requests wait",
+      "signal": "spec_precision_gap",
+      "scope": "checks",
+      "status": "candidate",
+      "features": [
+        "rbac"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C21 round 2 (checks)"
+      ],
+      "created": "2026-10-08T21:17:22Z",
+      "last_seen": "2026-10-08T21:17:22Z"
     }
   ]
 }

@@ -2,11 +2,15 @@
 
 **Verdict**: FAIL
 **Profile**: standard
-**Diff range**: 54895ff..fe13da6
-**Round**: 1 - full
+**Diff range**: 54895ff..7ad1473
+**Round**: 2 - scoped
 **Verifier**: independent sub-agent (author != verifier)
 
+Scope: fix diff `fe13da6..7ad1473` (tests in `app/internal/app/rbac_test.go`, `assign_roles_test.go`, `update_role_test.go`, `web/src/features/rbac/{RolesList,RoleForm,RoleDetail,UserRoles}.test.tsx`; `checks.md` C9, C21, C25, C31, C34, C46, C50, C51; `plan.md` Surface note) plus every round 1 verdict that was not PASS. No production code changed in the fix diff.
+
 ## Binding sources
+
+carried from fe13da6 - the fix did not touch the interface.
 
 | Source | Opened | Contradiction | Uncovered |
 | --- | --- | --- | --- |
@@ -14,127 +18,131 @@
 
 ## Checks
 
-Proof runs at `fe13da6` (each named test appears individually in the output):
+verified at 7ad1473 - every proof re-ran in full at `7ad1473`; each named test appears individually in the output:
 
-- Go: `go -C app test -count=1 ./internal/features/rbac/... ./internal/app ./archtest ./migrations -run '^(<34 names>)$' -v` exit 0 - 34 top-level tests + 13 subtests `--- PASS`, 0 `--- FAIL`
-- Web: `npm --prefix web run test -- src/features/rbac/{RolesList,RoleForm,RoleDetail,UserRoles}.test.tsx src/features/users/UserMenu.test.tsx src/routes/userDetail.test.tsx --reporter=verbose` exit 0 - 6 files, 33 passed
+- Go: `go -C app test -count=1 ./internal/features/rbac/... ./internal/app ./archtest ./migrations -run '^(<35 names>)$' -v` exit 0 - 35 top-level tests + 13 subtests `--- PASS` (48), 0 `--- FAIL`; includes the new `TestUpdateRole_UpdatesBothFields`
+- Web: `npm --prefix web run test -- src/features/rbac/{RolesList,RoleForm,RoleDetail,UserRoles}.test.tsx src/features/users/UserMenu.test.tsx src/routes/userDetail.test.tsx --reporter=verbose` exit 0 - 6 files, 40 passed; includes the new `RoleForm > forbidden on API 403`, `shows loading`, `shows error with retry`, `RoleDetail > forbidden on API 403`, `RolesList > new role link only with rbac:create`, `hides new role link without rbac:create`, `UserRoles > shows load error for held roles`
 - e2e: `task e2e -- rbac.spec.ts` exit 0 - `rbac.spec.ts:5:1 admin grants a role and the user gets exactly its access` 1 passed
 - `task gen:openapi:check` exit 0; `npm --prefix web run gen:check` exit 0
 
+Citations: files the fix touched were refreshed at 7ad1473; citations in untouched files (`list_permissions`, `list_roles`, `get_role`, `create_role`, `delete_role`, `get_user_roles` tests, `migrations/schema_test.go`, `archtest`, `UserMenu.test.tsx`, `userDetail.test.tsx`, `e2e/rbac.spec.ts`) are carried from fe13da6 (files byte-identical, `git diff fe13da6..7ad1473` empty for them).
+
 | Check | Claim | Proof run | Evidence | Result |
 | --- | --- | --- | --- | --- |
-| C1 | catalogue sorted, has rbac:read/rbac:assign/zeta:do, no `*` | `TestListPermissions_ReturnsCatalogue` PASS | `app/internal/features/rbac/list_permissions/list_permissions_test.go:25` - `require.True(t, slices.IsSorted(items))`; `:26-29` Contains rbac:read, rbac:assign, zeta:do, NotContains `*` | PASS |
-| C2 | order admin, Beta, Zeta; perms and counts | `TestListRoles_OrderedWithCounts` PASS | `app/internal/features/rbac/list_roles/list_roles_test.go:41` - `require.Equal(t, []string{"admin", "Beta", "Zeta"}, order)`; `:42-47` admin `["*"]`, Beta `["users:create","users:read"]`/2, Zeta `[]`/0 | PASS |
-| C3 | GET role returns id, name, sorted perms, user_count | `TestGetRole_ReturnsRole` PASS | `app/internal/features/rbac/get_role/get_role_test.go:25` - `require.Equal(t, role.Role{ID: beta, Name: "Beta", Permissions: []string{"users:create", "users:read"}, UserCount: 1}, ...)` | PASS |
-| C4 | 404 random uuid / 422 `abc` on GET, PATCH, DELETE | `TestGetRole_404And422`, `TestUpdateRole_404And422`, `TestDeleteRole_404And422` PASS | `app/internal/features/rbac/get_role/get_role_test.go:36-37`; `app/internal/features/rbac/update_role/update_role_test.go:164-165`; `app/internal/features/rbac/delete_role/delete_role_test.go:102-103` - `require.Equal(t, http.StatusNotFound, ...)` / `http.StatusUnprocessableEntity` | PASS |
-| C5 | 201 trimmed Leitor, perms, user_count 0, one audit role.created | `TestCreateRole_Creates` PASS | `app/internal/features/rbac/create_role/create_role_test.go:53-55` - name `"Leitor"`, perms, `user_count` 0; `:56-59` one `audit_events` row with `action = 'role.created' AND resource_type = 'role' AND resource_id = $1 AND actor_id = $2` | PASS |
-| C6 | POST LEITOR and PATCH " leitor " -> 409, nothing changed, no audit | `TestCreateRole_DuplicateNameIs409`, `TestUpdateRole_DuplicateNameIs409` PASS | `app/internal/features/rbac/create_role/create_role_test.go:68-70` - `StatusConflict`, roles count unchanged, audit zero; `app/internal/features/rbac/update_role/update_role_test.go:123-125` - `StatusConflict`, `nameOf == "Outro"`, audit zero | PASS |
-| C7 | concurrent same name: one 201, one 409, one row | `TestCreateRole_ConcurrentSameName` PASS | `app/internal/features/rbac/create_role/create_role_test.go:82-83` - `require.Equal(t, []int{http.StatusCreated, http.StatusConflict}, codes)`; one `Paralelo` | PASS |
-| C8 | 6 rejected (422 at location), 3 accepted, PATCH same 6 | `TestCreateRole_Validation`, `TestUpdateRole_Validation` PASS | `app/internal/features/rbac/create_role/create_role_test.go:103,108` - 422 and `require.Contains(t, locations, c.location)`; `:110` no row; `:119` 201 for 1, 50 chars, `[]`; `app/internal/features/rbac/update_role/update_role_test.go:154-155,157-159` - 422 at location, nothing changed | PASS |
-| C9 | PATCH name only / perms only, audit before/after | `TestUpdateRole_UpdatesSentFields` PASS | `app/internal/features/rbac/update_role/update_role_test.go:84,86-87` - perms kept, before/after snapshots; `:92-97` name kept, perms exactly `["users:create"]`, snapshots; `:98` two `role.updated` | PASS |
-| C10 | permission edit applies next request, sessions unchanged | `TestUpdateRole_AppliesOnNextRequest` PASS | `app/internal/features/rbac/update_role/update_role_test.go:110,114-115` - probe 200 then `http.StatusForbidden`, sessions count equal | PASS |
-| C11 | admin PATCH/DELETE 409, unchanged, no audit | `TestUpdateRole_AdminIs409`, `TestDeleteRole_AdminIs409` PASS | `app/internal/features/rbac/update_role/update_role_test.go:131-135` - 409 twice, name `admin`, perms `[]string{"*"}`, audit zero; `app/internal/features/rbac/delete_role/delete_role_test.go:59-61` - 409, `*` row remains, audit zero | PASS |
-| C12 | delete unused role 204, perms gone, audit role.deleted with before | `TestDeleteRole_Deletes` PASS | `app/internal/features/rbac/delete_role/delete_role_test.go:39-42` - 204, role and `role_permissions` zero, one audit; `:52-53` before name `Leitor`, perms `["users:create","users:read"]` | PASS |
-| C13 | delete in-use role 409, rows intact, no audit | `TestDeleteRole_InUseIs409` PASS | `app/internal/features/rbac/delete_role/delete_role_test.go:70-74` - 409, role, permission, `user_roles` rows 1, audit zero | PASS |
-| C14 | delete waits for uncommitted assignment then 409 | `TestDeleteRole_WaitsForConcurrentAssignment` PASS | `app/internal/features/rbac/delete_role/delete_role_test.go:91` - `t.Fatalf("delete answered %d while the assignment was uncommitted")`; `:96-97` 409, assignment intact | PASS |
-| C15 | user roles sorted by name; empty list | `TestGetUserRoles_ReturnsRoles` PASS | `app/internal/features/rbac/get_user_roles/get_user_roles_test.go:37` - `require.Equal(t, []held{{beta, "Beta"}, {zeta, "Zeta"}}, get(user))`; `:38` `[]held{}` | PASS |
-| C16 | replace set, sessions 0, both cookies 401, one audit with before/after | `TestAssignRoles_ReplacesAndRevokes` PASS | `app/internal/features/rbac/assign_roles/assign_roles_test.go:92-96` - 204, roles `sorted(beta, gama)`, sessions zero, both probes 401; `:98,103-104` one audit, `{"roles":["Alfa"]}` / `{"roles":["Beta","Gama"]}` | PASS |
-| C17 | same set reordered: 204, nothing changes, no audit | `TestAssignRoles_SameSetIsNoop` PASS | `app/internal/features/rbac/assign_roles/assign_roles_test.go:116-118` - 204, `require.Equal(t, was, f.state(t, user))` (roles, sessions, audits), audits zero | PASS |
-| C18 | unknown id or duplicate -> 422 at body.role_ids, unchanged | `TestAssignRoles_InvalidRoleIds` PASS | `app/internal/features/rbac/assign_roles/assign_roles_test.go:132-134` - 422, `"location":"body.role_ids"`, state equal | PASS |
-| C19 | 404 / 422 on GET and PUT users/{id}/roles | `TestGetUserRoles_404And422`, `TestAssignRoles_404And422` PASS | `app/internal/features/rbac/get_user_roles/get_user_roles_test.go:48-49`; `app/internal/features/rbac/assign_roles/assign_roles_test.go:140-141` | PASS |
-| C20 | last-admin guard, 5 cases; 409 leaves state | `TestAssignRoles_LastAdminGuard` PASS (5 subtests shown) | `app/internal/features/rbac/assign_roles/assign_roles_test.go:183` - `require.Equal(t, c.want, rec.Code)`; `:185` state unchanged on 409; table `:152-156` | PASS |
-| C21 | concurrent removal from 2 admins: one 204 one 409, x10 | `TestAssignRoles_ConcurrentLastAdmin` PASS | `app/internal/features/rbac/assign_roles/assign_roles_test.go:206-208` - `[]int{204, 409}` and one active admin holder; see Faults: the proof does not reliably detect removal of the lock | PASS |
-| C22 | trigger failure -> 500, roles/sessions/audit unchanged | `TestAssignRoles_RollsBackTogether` PASS | `app/internal/features/rbac/assign_roles/assign_roles_test.go:225-226` - `StatusInternalServerError`, state equal | PASS |
-| C23 | 8 ops declare permission, 401 no cookie, 403 others, no writes | `TestRBAC_OperationAccess` PASS (8 subtests shown) | `app/internal/app/rbac_test.go:66` - `require.Len(t, declared, len(operations))`; `:79` declared permission; `:82` 401; `:92-96` 403, audit zero, roles/user_roles unchanged | PASS |
-| C24 | ADMIN insert unique violation; Financeiro stored | `TestSchema_RoleNameUniqueIgnoringCase` PASS | `app/migrations/schema_test.go:63` - `require.ErrorContains(t, err, "23505")`; `:67` `"Financeiro"` | PASS |
-| C25 | openapi.json has the 8 ops with **exactly** the Surface statuses; schema.d.ts regenerated | `TestOpenAPI_RBACStatuses` PASS; `task gen:openapi:check` exit 0; `npm --prefix web run gen:check` exit 0 | `app/internal/app/rbac_test.go:126` - `require.Contains(t, operation.Responses, status, key)` asserts a subset only; the committed `app/openapi.json` carries `500` on all 8 RBAC operations, a status absent from the plan's Surface, so "exactly" is both unasserted and untrue | FAIL |
-| C26 | archtest clean on real module; web feature imports rule with failing fixture | `TestImports_RepositoryIsClean`, `TestWebFeatures_DoNotImportEachOther` PASS | `app/archtest/imports_test.go:37` - `require.Empty(t, v)`; `app/archtest/rbac_test.go:16-17` - fixture yields 1 violation `"rbac" imports feature "users"`; `:21` real `web/src` empty | PASS |
-| C27 | lib/session.ts and lib/problems.ts exports; old files gone | `TestWebSharedSession_Moved` PASS | `app/archtest/rbac_test.go:27,31` - Contains `export const meQuery`, `export function useMe`, `export function can`, `export function fieldErrors`, `export const forbidden`; `:35` `require.ErrorIs(t, err, os.ErrNotExist, gone)` | PASS |
-| C28 | /roles table headers; admin `Todas`, 2-perm role `2` | `RolesList > shows the roles table` PASS | `web/src/features/rbac/RolesList.test.tsx:30` - headers `["Nome", "Permissões", "Usuários"]`; `:38-41` rows `["admin","Todas","1"]`, `["Leitor","2","3"]` | PASS |
+| C1 | catalogue sorted, has rbac:read/rbac:assign/zeta:do, no `*` | `TestListPermissions_ReturnsCatalogue` PASS | (carried) `app/internal/features/rbac/list_permissions/list_permissions_test.go:25` - `require.True(t, slices.IsSorted(items))`; `:26-29` Contains rbac:read, rbac:assign, zeta:do, NotContains `*` | PASS |
+| C2 | order admin, Beta, Zeta; perms and counts | `TestListRoles_OrderedWithCounts` PASS | (carried) `app/internal/features/rbac/list_roles/list_roles_test.go:41` - `require.Equal(t, []string{"admin", "Beta", "Zeta"}, order)`; `:42-47` | PASS |
+| C3 | GET role returns id, name, sorted perms, user_count | `TestGetRole_ReturnsRole` PASS | (carried) `app/internal/features/rbac/get_role/get_role_test.go:25` - `require.Equal(t, role.Role{ID: beta, Name: "Beta", ...})` | PASS |
+| C4 | 404 random uuid / 422 `abc` on GET, PATCH, DELETE | `TestGetRole_404And422`, `TestUpdateRole_404And422`, `TestDeleteRole_404And422` PASS | `app/internal/features/rbac/get_role/get_role_test.go:36-37`; `app/internal/features/rbac/update_role/update_role_test.go:164-165`; `app/internal/features/rbac/delete_role/delete_role_test.go:102-103` - `http.StatusNotFound` / `http.StatusUnprocessableEntity` | PASS |
+| C5 | 201 trimmed Leitor, one audit role.created | `TestCreateRole_Creates` PASS | (carried) `app/internal/features/rbac/create_role/create_role_test.go:53-59` | PASS |
+| C6 | duplicate name 409 on POST and PATCH, no change, no audit | `TestCreateRole_DuplicateNameIs409`, `TestUpdateRole_DuplicateNameIs409` PASS | `app/internal/features/rbac/create_role/create_role_test.go:68-70`; `app/internal/features/rbac/update_role/update_role_test.go:123-125` - `StatusConflict`, `nameOf == "Outro"`, audit zero | PASS |
+| C7 | concurrent same name: one 201, one 409 | `TestCreateRole_ConcurrentSameName` PASS | (carried) `app/internal/features/rbac/create_role/create_role_test.go:82-83` | PASS |
+| C8 | 6 rejected, 3 accepted, PATCH same 6 | `TestCreateRole_Validation`, `TestUpdateRole_Validation` PASS | `app/internal/features/rbac/create_role/create_role_test.go:103,108,110,119`; `app/internal/features/rbac/update_role/update_role_test.go:154-155,157-159` | PASS |
+| C9 | PATCH name only / perms only / both in one call, audit before/after | `TestUpdateRole_UpdatesSentFields`, `TestUpdateRole_UpdatesBothFields` PASS | `app/internal/features/rbac/update_role/update_role_test.go:84,86-87,92-98` (single fields); `:175-178` - `require.Equal(t, "Gestor", got.Name)`, perms `[]string{"users:create", "users:read"}` in response and DB; `:180-181` before `snapshot{"Leitor", ["users:read"]}` / after `snapshot{"Gestor", [...]}`; `:182` `require.Equal(t, 1, ... audit_events)` | PASS |
+| C10 | permission edit applies next request, sessions unchanged | `TestUpdateRole_AppliesOnNextRequest` PASS | `app/internal/features/rbac/update_role/update_role_test.go:110,114-115` | PASS |
+| C11 | admin PATCH/DELETE 409, unchanged, no audit | `TestUpdateRole_AdminIs409`, `TestDeleteRole_AdminIs409` PASS | `app/internal/features/rbac/update_role/update_role_test.go:131-135`; `app/internal/features/rbac/delete_role/delete_role_test.go:59-61` | PASS |
+| C12 | delete unused role 204, perms gone, audit with before | `TestDeleteRole_Deletes` PASS | (carried) `app/internal/features/rbac/delete_role/delete_role_test.go:39-42,52-53` | PASS |
+| C13 | delete in-use role 409, rows intact | `TestDeleteRole_InUseIs409` PASS | (carried) `app/internal/features/rbac/delete_role/delete_role_test.go:70-74` | PASS |
+| C14 | delete waits for uncommitted assignment then 409 | `TestDeleteRole_WaitsForConcurrentAssignment` PASS | (carried) `app/internal/features/rbac/delete_role/delete_role_test.go:91,96-97` | PASS |
+| C15 | user roles sorted by name; empty list | `TestGetUserRoles_ReturnsRoles` PASS | (carried) `app/internal/features/rbac/get_user_roles/get_user_roles_test.go:37-38` | PASS |
+| C16 | replace set, sessions 0, cookies 401, one audit before/after | `TestAssignRoles_ReplacesAndRevokes` PASS | `app/internal/features/rbac/assign_roles/assign_roles_test.go:93-97` - 204, `sorted(beta, gama)`, sessions zero, both probes 401; `:102,104-105` `{"roles":["Alfa"]}` / `{"roles":["Beta","Gama"]}` | PASS |
+| C17 | same set reordered: 204, nothing changes | `TestAssignRoles_SameSetIsNoop` PASS | `app/internal/features/rbac/assign_roles/assign_roles_test.go:117-119` - `require.Equal(t, was, f.state(t, user))` | PASS |
+| C18 | unknown/duplicate id -> 422 at body.role_ids | `TestAssignRoles_InvalidRoleIds` PASS | `app/internal/features/rbac/assign_roles/assign_roles_test.go:133-135` | PASS |
+| C19 | 404 / 422 on GET and PUT users/{id}/roles | `TestGetUserRoles_404And422`, `TestAssignRoles_404And422` PASS | `app/internal/features/rbac/get_user_roles/get_user_roles_test.go:48-49`; `app/internal/features/rbac/assign_roles/assign_roles_test.go:141-142` | PASS |
+| C20 | last-admin guard, 5 cases | `TestAssignRoles_LastAdminGuard` PASS (5 subtests shown) | `app/internal/features/rbac/assign_roles/assign_roles_test.go:184` - `require.Equal(t, c.want, rec.Code)`; `:186` state unchanged on 409; table `:153-157` | PASS |
+| C21 | two concurrent admin removals "both held **inside their transactions** until each is waiting on a lock": one 204, one 409, one active admin; x3 | `TestAssignRoles_ConcurrentLastAdmin` PASS | `app/internal/features/rbac/assign_roles/assign_roles_test.go:218` - `require.Equal(t, []int{http.StatusNoContent, http.StatusConflict}, codes)`; `:219-220` one active admin holder. Outcome holds and F1 is now killed (13/13 runs). The stated precondition is false: the gate `:202` takes `LOCK TABLE sessions IN ACCESS EXCLUSIVE MODE`, which also blocks the session lookup `SELECT ... FROM sessions` in `app/internal/platform/auth/auth.go:99-101`, run before `platformdb.WithTx` (`app/internal/features/rbac/assign_roles/endpoint.go:68`). Diagnostic in the scratch worktree: both `pg_stat_activity` waiters counted at `:210-213` had `backend_xid` NULL, i.e. neither had reached `LockUser ... FOR UPDATE`; they wait in authentication, outside the transaction. The interleave is a simultaneous release, not the forced one the claim and the assertion message ("both requests must be inside their transactions") describe | FAIL |
+| C22 | trigger failure -> 500, state unchanged | `TestAssignRoles_RollsBackTogether` PASS | `app/internal/features/rbac/assign_roles/assign_roles_test.go:237-238` - `StatusInternalServerError`, `require.Equal(t, was, f.state(t, user))` | PASS |
+| C23 | 8 ops declare permission, 401, 403 without own, no writes | `TestRBAC_OperationAccess` PASS (8 subtests shown) | `app/internal/app/rbac_test.go:68` - `require.Len(t, declared, len(operations))`; `:81` declared permission; `:84` 401; `:94-98` 403, audit zero, roles/user_roles unchanged | PASS |
+| C24 | ADMIN insert unique violation; Financeiro stored | `TestSchema_RoleNameUniqueIgnoringCase` PASS | (carried) `app/migrations/schema_test.go:63,67` | PASS |
+| C25 | 8 ops each document exactly Surface statuses plus `500`; schema.d.ts regenerated | `TestOpenAPI_RBACStatuses` PASS; `task gen:openapi:check` exit 0; `npm --prefix web run gen:check` exit 0 | `app/internal/app/rbac_test.go:114-122` - `want` lists all 8 ops with the plan Surface statuses verbatim; `:127-128` - `documented := slices.Sorted(maps.Keys(operation.Responses))`, `require.Equal(t, slices.Sorted(slices.Values(append(statuses, "500"))), documented, key)` - set equality; plan `Surface` note records `+500` | PASS |
+| C26 | archtest clean; web feature import rule with failing fixture | `TestImports_RepositoryIsClean`, `TestWebFeatures_DoNotImportEachOther` PASS | (carried) `app/archtest/imports_test.go:37`; `app/archtest/rbac_test.go:16-17,21` | PASS |
+| C27 | lib/session.ts, lib/problems.ts exports; old files gone | `TestWebSharedSession_Moved` PASS | (carried) `app/archtest/rbac_test.go:27,31,35` | PASS |
+| C28 | /roles table headers; `Todas`, `2` | `RolesList > shows the roles table` PASS | `web/src/features/rbac/RolesList.test.tsx:30,38-41` | PASS |
 | C29 | role="status" while pending on /roles and /roles/$id | `RolesList > shows loading`, `RoleDetail > shows loading` PASS | `web/src/features/rbac/RolesList.test.tsx:47`; `web/src/features/rbac/RoleDetail.test.tsx:31` - `findByRole("status")` | PASS |
-| C30 | 500 shows message and retry repeats request, both screens | `RolesList > shows error with retry`, `RoleDetail > shows error with retry` PASS | `web/src/features/rbac/RolesList.test.tsx:56,59` - message, 2 requests; `web/src/features/rbac/RoleDetail.test.tsx:41,44` | PASS |
-| C31 | forbidden on 3 screens without rbac:read, no rbac call; API 403 on /roles; menu link | `-t forbidden` on RolesList/RoleForm/RoleDetail, `UserMenu -t "roles link"` PASS (2 menu tests shown) | `web/src/features/rbac/RolesList.test.tsx:65-66,75`; `web/src/features/rbac/RoleForm.test.tsx:86-87`; `web/src/features/rbac/RoleDetail.test.tsx:50-51`; `web/src/features/users/UserMenu.test.tsx:35,42` | PASS |
-| C32 | create sends body, navigates to /roles/<id> | `RoleForm > creates and navigates` PASS | `web/src/features/rbac/RoleForm.test.tsx:35` - pathname `/roles/${created}`; `:36` body `{name: "Leitor", permissions: ["users:read"]}` | PASS |
-| C33 | grouped headings and checkboxes in order, both screens | `RoleForm > groups permissions`, `RoleDetail > groups permissions` PASS | `web/src/features/rbac/RoleForm.test.tsx:49`; `web/src/features/rbac/RoleDetail.test.tsx:71` - `["# rbac", "rbac:read", "# users", "users:create", "users:read"]` | PASS |
-| C34 | 409 shows message **under the name field**, create and edit | `RoleForm > shows name conflict`, `RoleDetail > shows name conflict` PASS | `web/src/features/rbac/RoleForm.test.tsx:60`; `web/src/features/rbac/RoleDetail.test.tsx:106` - only `findByText("Já existe um papel com este nome.")`; placement under the name field is not asserted (no `aria-describedby`/`name-error` check, unlike C35), so mapping 409 to the permissions field would pass | FAIL |
-| C35 | 422 messages under their fields, both screens | `RoleForm > shows field errors`, `RoleDetail > shows field errors` PASS | `web/src/features/rbac/RoleForm.test.tsx:79-80`; `web/src/features/rbac/RoleDetail.test.tsx:127-128` - `aria-describedby` `name-error`, `permissions-error` id | PASS |
-| C36 | PATCH only changed fields; `Alterações salvas.` each | `RoleDetail > patches only changed fields` PASS | `web/src/features/rbac/RoleDetail.test.tsx:95` - `[{ name: "Consulta" }, { permissions: ["users:create", "users:read"] }]`; `:89,96` message | PASS |
-| C37 | admin locked message, disabled fields, no Salvar/Excluir | `RoleDetail > locks the admin role` PASS | `web/src/features/rbac/RoleDetail.test.tsx:135-142` | PASS |
-| C38 | delete dialog text, cancel sends nothing, confirm DELETE + navigate | `RoleDetail > confirms deletion` PASS | `web/src/features/rbac/RoleDetail.test.tsx:154,157,164-165` | PASS |
-| C39 | in-use message and disabled Excluir | `RoleDetail > blocks deletion in use` PASS | `web/src/features/rbac/RoleDetail.test.tsx:172,174` | PASS |
+| C30 | 500 message and retry, both screens | `RolesList > shows error with retry`, `RoleDetail > shows error with retry` PASS | `web/src/features/rbac/RolesList.test.tsx:56,59`; `web/src/features/rbac/RoleDetail.test.tsx:41,44` | PASS |
+| C31 | forbidden without rbac:read on 3 screens, no rbac call; API 403 on /roles, /roles/new, /roles/$id; menu link | `-t forbidden` on RolesList (2), RoleForm (2), RoleDetail (2); `UserMenu -t "roles link"` (2) PASS | `web/src/features/rbac/RolesList.test.tsx:65-66,75`; `web/src/features/rbac/RoleForm.test.tsx:88-89` (no rbac call); `:95` API 403 with `rbac:read`+`rbac:create` - `findByText("Você não tem permissão para acessar esta página.")`; `web/src/features/rbac/RoleDetail.test.tsx:50-51`; `:186` API 403 on `GET /roles/{id}` with `rbac:read` - same text; `web/src/features/users/UserMenu.test.tsx:35,42` | PASS |
+| C32 | create sends body, navigates | `RoleForm > creates and navigates` PASS | `web/src/features/rbac/RoleForm.test.tsx:35-36` | PASS |
+| C33 | grouped headings and checkboxes, both screens | `RoleForm > groups permissions`, `RoleDetail > groups permissions` PASS | `web/src/features/rbac/RoleForm.test.tsx:49`; `web/src/features/rbac/RoleDetail.test.tsx:71` | PASS |
+| C34 | 409 message in `name-error`, referenced by the name input's `aria-describedby`, create and edit | `RoleForm > shows name conflict`, `RoleDetail > shows name conflict` PASS | `web/src/features/rbac/RoleForm.test.tsx:61-62` and `web/src/features/rbac/RoleDetail.test.tsx:107-108` - `expect(conflict.id).toBe("name-error")`, `expect(screen.getByLabelText("Nome")).toHaveAttribute("aria-describedby", "name-error")`; F2 killed | PASS |
+| C35 | 422 messages under their fields | `RoleForm > shows field errors`, `RoleDetail > shows field errors` PASS | `web/src/features/rbac/RoleForm.test.tsx:81-82`; `web/src/features/rbac/RoleDetail.test.tsx:129-130` | PASS |
+| C36 | PATCH only changed fields; success text | `RoleDetail > patches only changed fields` PASS | `web/src/features/rbac/RoleDetail.test.tsx:93,95` | PASS |
+| C37 | admin locked | `RoleDetail > locks the admin role` PASS | `web/src/features/rbac/RoleDetail.test.tsx:137-144` | PASS |
+| C38 | delete dialog, cancel, confirm | `RoleDetail > confirms deletion` PASS | `web/src/features/rbac/RoleDetail.test.tsx:156,159,166-167` | PASS |
+| C39 | in-use message, disabled Excluir | `RoleDetail > blocks deletion in use` PASS | `web/src/features/rbac/RoleDetail.test.tsx:174,176` | PASS |
 | C40 | 404 shows `Papel não encontrado.` | `RoleDetail > shows not found` PASS | `web/src/features/rbac/RoleDetail.test.tsx:61` | PASS |
-| C41 | one checkbox per role, checked for held | `UserRoles > checks held roles` PASS | `web/src/features/rbac/UserRoles.test.tsx:45-46` - admin checked, Leitor not checked | PASS |
-| C42 | without rbac:assign all disabled, no Salvar papéis | `UserRoles > read only without assign` PASS | `web/src/features/rbac/UserRoles.test.tsx:53-54` | PASS |
-| C43 | confirm dialog text, cancel no PUT, confirm PUT body, success text | `UserRoles > confirms and saves` PASS | `web/src/features/rbac/UserRoles.test.tsx:67-68,72,76,78-79` | PASS |
-| C44 | 409 shows last-admin message | `UserRoles > shows last admin conflict` PASS | `web/src/features/rbac/UserRoles.test.tsx:94` | PASS |
-| C45 | no section and no rbac request without rbac:read | `UserRoles > hidden without read` PASS | `web/src/features/rbac/UserRoles.test.tsx:104-105` | PASS |
-| C46 | 500 on **either** roles request shows load error in section | `UserRoles > shows load error` PASS | `web/src/features/rbac/UserRoles.test.tsx:115` - only `GET /api/v1/rbac/roles` returns 500; the `GET /api/v1/rbac/users/{id}/roles` failure (`held.isError`, `web/src/features/rbac/UserRoles.tsx:73`) has no proof - a claim about 2 cases proven on 1 | FAIL |
-| C47 | /users/$id renders user heading and Papéis section | `/users/$id route > composes user and roles` PASS | `web/src/routes/userDetail.test.tsx:22-23` | PASS |
-| C48 | assembled: create role, assign, user sees /users, forbidden on /roles | `task e2e -- rbac.spec.ts` 1 passed | `web/e2e/rbac.spec.ts:34` - `Papéis atualizados.`; `:40` users table contains reader; `:42` permission message | PASS |
-| C49 | audit actions exactly the 4 names, each by its own check | C5/C9/C12/C16 proofs PASS | `app/internal/features/rbac/create_role/create_role_test.go:58`; `app/internal/features/rbac/update_role/update_role_test.go:98`; `app/internal/features/rbac/delete_role/delete_role_test.go:44`; `app/internal/features/rbac/assign_roles/assign_roles_test.go:101` | PASS |
+| C41 | checkbox per role, checked for held | `UserRoles > checks held roles` PASS | `web/src/features/rbac/UserRoles.test.tsx:45-46` | PASS |
+| C42 | read only without rbac:assign | `UserRoles > read only without assign` PASS | `web/src/features/rbac/UserRoles.test.tsx:53-54` | PASS |
+| C43 | confirm dialog, cancel, PUT body, success | `UserRoles > confirms and saves` PASS | `web/src/features/rbac/UserRoles.test.tsx:67-68,72,76,78-79` | PASS |
+| C44 | 409 last-admin message | `UserRoles > shows last admin conflict` PASS | `web/src/features/rbac/UserRoles.test.tsx:94` | PASS |
+| C45 | hidden without rbac:read, no request | `UserRoles > hidden without read` PASS | `web/src/features/rbac/UserRoles.test.tsx:104-105` | PASS |
+| C46 | 500 on either roles request shows load error in section | `UserRoles > shows load error`, `shows load error for held roles` PASS | `web/src/features/rbac/UserRoles.test.tsx:115` (`GET /rbac/roles` 500); `:119,123` - `GET ${rolesPath}` (`/api/v1/rbac/users/{id}/roles`, `:21`) 500, `within(element).findByText("Não foi possível carregar os papéis.")`; F4 killed | PASS |
+| C47 | /users/$id renders user heading and Papéis | `/users/$id route > composes user and roles` PASS | (carried) `web/src/routes/userDetail.test.tsx:22-23` | PASS |
+| C48 | assembled e2e | `task e2e -- rbac.spec.ts` 1 passed | (carried) `web/e2e/rbac.spec.ts:34,40,42` | PASS |
+| C49 | audit actions exactly the 4 names | C5/C9/C12/C16 proofs PASS | `app/internal/features/rbac/create_role/create_role_test.go:58`; `app/internal/features/rbac/update_role/update_role_test.go:98`; `app/internal/features/rbac/delete_role/delete_role_test.go:44`; `app/internal/features/rbac/assign_roles/assign_roles_test.go:102` | PASS |
+| C50 | /roles/new loading and load error with retry | `RoleForm > shows loading`, `RoleForm > shows error with retry` PASS | `web/src/features/rbac/RoleForm.test.tsx:101` - `findByRole("status")` with catalogue `pending`; `:110` message; `:111-113` click `Tentar novamente`, checkbox `users:read` appears, permissions requests `toHaveLength(2)` | PASS |
+| C51 | `Novo papel` with rbac:create, absent without | `RolesList > new role link only with rbac:create`, `hides new role link without rbac:create` PASS | `web/src/features/rbac/RolesList.test.tsx:84` - `findByRole("link", { name: "Novo papel" })`; `:93-94` table rendered then `queryByRole("link", { name: "Novo papel" })).not.toBeInTheDocument()`; F5 killed | PASS |
 
 ## Coverage
 
-Recomputed from the plan's Surface, Landing, Relations and AC text, and from the code (`app/openapi.json`, `op.Spec.Errors`, the web components' branches).
+Rows the fix touched recomputed at 7ad1473 from the plan's Surface (with the new `500` note), AC 9, AC 27, the Observable states and the web components' branches; other rows carried from fe13da6.
 
 | Set (size) | Recomputed from | Member -> proof | Unproven |
 | --- | --- | --- | --- |
-| route statuses, 8 routes (39 Surface members) | plan Surface + `app/openapi.json` | every Surface status proven as listed in checks.md (C1-C23); `500` additionally emitted on all 8 ops: PUT by C22, others by foundation (Swept `existing`) | `openapi.json` set != Surface set (extra `500` x8), so C25's "exactly" is unproven |
-| access marker per RBAC operation (8) | `app/internal/features/rbac/register.go:22-29` | C23, table over 8 | - |
-| role validation inputs (9) | AC 8 | C8 | - |
-| `PATCH` field combinations (3: name, permissions, both) | AC 9 "`name`, `permissions` or both" | name only C9 · permissions only C9 | both fields in one PATCH - no proof (checks.md replaced it with "duplicate name") |
-| role guards (3) | AC 11, 13 + delete_role code | C11 · C13 · C14 | - |
-| last-admin guard cases (5) | AC 19 + `assign_roles/endpoint.go:150` | C20 | - |
-| assignment outcomes (5) | AC 15-21 | C16 · C17 · C18 · C20/C21 · C22 | - |
-| audit actions (4) | Landing door 3 | C5 · C9 · C12 · C16 | - |
-| Relations edges (4) | plan Relations | role_permissions cascade C12 · user_roles refuse delete C13 · users-user_roles C15/C16 · sessions deleted on change C16 | - |
-| Landing doors (5) | plan Landing | door 1 C6, C7, C24 · door 2 C20, C21 · door 3 C23, C25, C49 · door 4 C26, C47 · door 5 C26, C27 | door 2 literal shape "`FOR UPDATE` before counting" - fault F1 survived; C21 does not reliably detect it |
-| AC 27 forbidden by API 403 (3 screens) | AC 27 "or the API answers 403 THEN /roles, /roles/new and /roles/$id" | /roles C31 | /roles/new API 403 (`web/src/features/rbac/RoleForm.tsx:37`); /roles/$id API 403 (`web/src/features/rbac/RoleDetail.tsx:81`) - the latter named in checks.md's own Test policy prose ("detail maps 403/...") |
-| screen `/roles` states (4) | Observable | C28 · C29 · C30 · C31 | - |
-| screen `/roles/new` states (5) | Observable | C32 · C33 · C34 · C35 · C31 | 409 placement under name field (C34 FAIL) |
-| screen `/roles/$id` states (11) | Observable | C29 · C30 · C31 · C33 · C34 · C35 · C36 · C37 · C38 · C39 · C40 | 409 placement under name field (C34 FAIL) |
-| section `Papéis` states (6, error state has 2 sources) | Observable + `UserRoles.tsx:73` | C41 · C42 · C43 · C44 · C45 · C46 (roles list only) | load error from `GET /rbac/users/{id}/roles` |
-| menu link `Papéis` (2) | AC 27 | C31 both | - |
-| startup assembly (2 places) | `app/internal/features/registry.go:17`, `app/internal/app/app.go:50` | C23, C25 · slice harness C1-C22 | - |
-| auth-security rule 6 (1) | SKILL rule 6 | C16, C22 (F2 killed) | - |
+| route statuses, 8 routes (39 Surface + 8 `500` = 47) - verified at 7ad1473 | plan Surface + Surface note + `app/openapi.json` | contract: C25 asserts set equality per op (`app/internal/app/rbac_test.go:128`); behaviour: every Surface status C1-C23 as listed in checks.md; `500` behaviour PUT C22, others foundation (Swept `existing`) | - |
+| access marker per RBAC operation (8) - carried from fe13da6 | `app/internal/features/rbac/register.go:22-29` | C23 | - |
+| role validation inputs (9) - carried from fe13da6 | AC 8 | C8 | - |
+| `PATCH` field combinations (3: name, permissions, both) - verified at 7ad1473 | AC 9 | name only C9 · permissions only C9 · both C9 (`TestUpdateRole_UpdatesBothFields`) | - |
+| role guards (3) - carried from fe13da6 | AC 11, 13 | C11 · C13 · C14 | - |
+| last-admin guard cases (5) - carried from fe13da6 | AC 19 | C20 | - |
+| assignment outcomes (5) - carried from fe13da6 | AC 15-21 | C16 · C17 · C18 · C20/C21 · C22 | - |
+| audit actions (4) - carried from fe13da6 | Landing door 3 | C5 · C9 · C12 · C16 | - |
+| Relations edges (4) - carried from fe13da6 | plan Relations | C12 · C13 · C15/C16 · C16 | - |
+| Landing doors (5) - verified at 7ad1473 | plan Landing | door 1 C6, C7, C24 · door 2 C20, C21 (F1 now killed 13/13; mechanism finding recorded under C21) · door 3 C23, C25, C49 · door 4 C26, C47 · door 5 C26, C27 | - |
+| AC 27 forbidden by API 403 (3 screens) - verified at 7ad1473 | AC 27 | /roles C31 · /roles/new C31 (`RoleForm.test.tsx:95`, F3 killed) · /roles/$id C31 (`RoleDetail.test.tsx:186`) | - |
+| screen `/roles` states (4) + link `Novo papel` (2) - verified at 7ad1473 | Observable + `RolesList.tsx:19-21,27` | C28 · C29 · C30 · C31 · `Novo papel` shown C51 · hidden C51 | - |
+| screen `/roles/new` states (8) - verified at 7ad1473 | Observable + `RoleForm.tsx:37-41` + `roleErrors.ts:7-8` | C32 · C33 · C34 · C35 · C31 forbidden · C31 API 403 · C50 loading · C50 load error | - |
+| screen `/roles/$id` states (12) - verified at 7ad1473 | Observable + `RoleDetail.tsx:81-84,97,134` | C29 · C30 · C31 · C31 API 403 · C33 · C34 · C35 · C36 · C37 · C38 · C39 · C40 | - |
+| section `Papéis` states (7) - verified at 7ad1473 | Observable + `UserRoles.tsx:20,73,75` | C41 · C42 · C43 · C44 · C45 · C46 roles error · C46 held-roles error | - |
+| menu link `Papéis` (2) - carried from fe13da6 | AC 27 | C31 both | - |
+| startup assembly (2 places) - carried from fe13da6 | `app/internal/features/registry.go:17`, `app/internal/app/app.go:50` | C23, C25 · slice harness C1-C22 | - |
+| auth-security rule 6 (1) - carried from fe13da6 | SKILL rule 6 | C16, C22 | - |
+
+Round 1 unproven members, re-judged: `500` set mismatch -> proven (C25 equality); PATCH both -> proven (C9); /roles/new and /roles/$id API 403 -> proven (C31); 409 placement -> proven (C34); held-roles load error -> proven (C46); door 2 lock -> fault F1 killed, but see C21.
 
 ## Test policy rows
 
+verified at 7ad1473 (both round 1 unmet rows re-judged; the other two rows classify no touched production file and are carried from fe13da6).
+
 | Row | Files it classifies | Required proof | Expectation met |
 | --- | --- | --- | --- |
-| Decides, reached across a boundary | `features/rbac/{assign_roles,create_role,update_role,delete_role}/endpoint.go`, `features/rbac/role/role.go` | boundary C23, C25 · own layer C5-C22 | no - gap: door-2 lock row of `assign_roles` survives fault F1; PATCH "both fields" row of `update_role` unasserted |
-| Decides, not reached across a boundary | `web/src/features/rbac/{RolesList,RoleForm,RoleDetail,UserRoles}.tsx`, `web/src/features/users/UserMenu.tsx` | own layer C28-C47 | no - unasserted rows: `RoleForm.tsx:37` API 403, `:40` loading, `:41` load error; `RoleDetail.tsx:81` API 403; `UserRoles.tsx:73` held-roles error; RoleForm/RoleDetail 409 placement (C34); `RolesList.tsx:27` `Novo papel` link with `rbac:create` |
-| Entry point that decides nothing | `features/rbac/{list_permissions,list_roles,get_role,get_user_roles}/endpoint.go` | boundary C1-C4, C15, C19 | yes |
-| Instrumentation, pass-throughs | `features/rbac/register.go`, `rbactest`, `web/src/features/rbac/{api,copy,States}.ts(x)`, routes | none of its own | yes - covered by C23, C28-C47 |
+| Decides, reached across a boundary | `features/rbac/{assign_roles,create_role,update_role,delete_role}/endpoint.go`, `features/rbac/role/role.go` | boundary C23, C25 · own layer C5-C22 | yes - lock row of `assign_roles` now has a killing assertion (F1 killed 13/13), PATCH both-fields row asserted by C9; the mis-stated C21 precondition is recorded as a check finding |
+| Decides, not reached across a boundary | `web/src/features/rbac/{RolesList,RoleForm,RoleDetail,UserRoles}.tsx`, `roleErrors.ts`, `web/src/features/users/UserMenu.tsx` | own layer C28-C47, C50, C51 | yes - every row named in round 1 now asserted: `RoleForm.tsx:37` API 403 (C31), `:40-41` loading/load error (C50), `RoleDetail.tsx:81` API 403 (C31), `UserRoles.tsx:73` held-roles error (C46), `roleErrors.ts:7` 409 placement (C34), `RolesList.tsx:27` `Novo papel` (C51) |
+| Entry point that decides nothing | `features/rbac/{list_permissions,list_roles,get_role,get_user_roles}/endpoint.go` | boundary C1-C4, C15, C19 | yes (carried from fe13da6) |
+| Instrumentation, pass-throughs | `features/rbac/register.go`, `rbactest`, `web/src/features/rbac/{api,copy,States}.ts(x)`, routes | none of its own | yes (carried from fe13da6) |
 
-Swept rows resolving to `existing`: "dependency failure - database errors surface as `500` problem+json through foundation C3, C13" - constraint present: `app/internal/platform/httpx/problem.go:16` overrides `huma.NewError` (problem+json), `app/internal/platform/httpx/middleware.go:93` writes `500` problem on panic; exercised for RBAC by C22. Holds.
+Swept rows resolving to `existing` - carried from fe13da6: "dependency failure - database errors surface as `500` problem+json through foundation" holds (`app/internal/platform/httpx/problem.go:16`, `app/internal/platform/httpx/middleware.go:93`).
 
 ## Faults injected
 
-Scratch worktree `git worktree add --detach <scratchpad>/wt HEAD`; baseline porcelain `?? .claude/skills/auth-security/`, `?? .cursor/skills/auth-security/`; each fault reverted with `git checkout -- app|web/src` before the next; worktree removed with `git worktree remove --force`; real-tree porcelain afterwards identical to baseline. Web fault ran with a junction to the real `web/node_modules` (removed before worktree removal).
+verified at 7ad1473. Scratch worktree `git worktree add --detach <scratchpad>/wt2 HEAD`; baseline porcelain of the real tree `?? .claude/skills/auth-security/`, `?? .cursor/skills/auth-security/`; F1 regenerated sqlc with `go -C app run ./cmd/sqlcrun generate` in the scratch; web faults ran with a junction to the real `web/node_modules` (removed before worktree removal); each fault reverted with `git checkout` before the next; worktree removed with `git worktree remove --force`; real-tree porcelain afterwards identical to baseline. Surfaces chosen: the round 1 survivor plus four assertion surfaces the fix created.
 
 | Mutation | Location | Killed |
 | --- | --- | --- |
-| F1 drop `FOR UPDATE` from `LockAdminRole` (lock-then-count, door 2) -> `TestAssignRoles_ConcurrentLastAdmin` | `app/internal/features/rbac/assign_roles/queries.sql:11` (`db/queries.sql.go:67`) | no - survived the first run (10 iterations PASS); `-count=3` rerun: PASS, FAIL (`[]int{204, 204}`), PASS - killed in 1 of 4 runs |
-| F2 skip `DeleteUserSessions` -> `TestAssignRoles_ReplacesAndRevokes` | `app/internal/features/rbac/assign_roles/endpoint.go:121` | yes - "Should be zero, but was 2" |
-| F3 drop `FOR UPDATE` from delete `LockRole` -> `TestDeleteRole_WaitsForConcurrentAssignment` | `app/internal/features/rbac/delete_role/queries.sql:2` (`db/queries.sql.go:35`) | yes - expected 409, actual 204 |
-| F4 `role.CheckPermissions` accepts `*` -> `TestCreateRole_Validation` | `app/internal/features/rbac/role/role.go:51` | yes - expected 422, actual 201 |
-| F5 `RolesList` drops `Todas` (always the count) -> `RolesList > shows the roles table` | `web/src/features/rbac/RolesList.tsx:11` | yes - `"Todas"` expected, `"1"` received |
+| F1 drop `FOR UPDATE` from `LockAdminRole` -> `TestAssignRoles_ConcurrentLastAdmin -count=3` | `app/internal/features/rbac/assign_roles/queries.sql:11` (`db/queries.sql.go`) | yes - 3/3 runs FAIL `expected []int{204, 409} actual []int{204, 204}`; repeated `-count=10`: 10/10 FAIL |
+| F2 `roleErrors` maps 409 to `permissions` instead of `name` -> `-t "shows name conflict"` on RoleForm and RoleDetail | `web/src/features/rbac/roleErrors.ts:7` | yes - both FAIL, `Expected: "name-error" Received: "permissions-error"` |
+| F3 `RoleForm` drops the API 403 branch (`if (!allowed)` only) -> `RoleForm > forbidden on API 403` | `web/src/features/rbac/RoleForm.tsx:37` | yes - forbidden text not found |
+| F4 `UserRoles` error state ignores `held.isError` -> `UserRoles > shows load error for held roles` | `web/src/features/rbac/UserRoles.tsx:73` | yes - load error text not found |
+| F5 `RolesList` shows `Novo papel` unconditionally -> `-t "new role link"` | `web/src/features/rbac/RolesList.tsx:27` | yes - `hides new role link without rbac:create` FAIL |
 
 ## Gate
 
-`go -C app test -count=1 <rbac proofs> -v` - 47 passed (34 tests + 13 subtests), 0 failed
-`npm --prefix web run test -- <6 files>` - 33 passed, 0 failed
+verified at 7ad1473.
+
+`go -C app test -count=1 <35 rbac proofs> -v` - 48 passed (35 tests + 13 subtests), 0 failed
+`npm --prefix web run test -- <6 files>` - 40 passed, 0 failed
 `task e2e -- rbac.spec.ts` - 1 passed, 0 failed
 `task gen:openapi:check` - exit 0; `npm --prefix web run gen:check` - exit 0
 Full `task check` not run by the Verifier.
 
 Ranked gaps:
 
-1. F1 surviving mutant - C21 / Landing door 2 - `app/internal/features/rbac/assign_roles/assign_roles_test.go:206`: removing the admin-role lock is caught in about 1 of 4 runs; the race window is too narrow for 10 iterations (needs a forced interleave, e.g. hold the admin row lock from a test transaction, or a barrier between count and delete).
-2. C25 - `app/internal/app/rbac_test.go:126`: `Contains` does not prove "exactly", and `app/openapi.json` carries an extra `500` on all 8 RBAC ops; either assert set equality and add `500` to the Surface, or restate the claim.
-3. AC 27 API 403 on `/roles/new` and `/roles/$id` unproven - `web/src/features/rbac/RoleForm.tsx:37`, `web/src/features/rbac/RoleDetail.tsx:81`.
-4. C46 - `web/src/features/rbac/UserRoles.test.tsx:115`: only one of the two roles requests fails in the proof; `UserRoles.tsx:73` `held.isError` unproven.
-5. C34 - `web/src/features/rbac/RoleForm.test.tsx:60`, `web/src/features/rbac/RoleDetail.test.tsx:106`: "under the name field" not asserted.
-6. AC 9 PATCH with both `name` and `permissions` unproven (coverage set row dropped the member).
-7. Web decision rows without an asserted case: RoleForm loading / load error (`RoleForm.tsx:40-41`), `Novo papel` link gated by `rbac:create` (`RolesList.tsx:27`).
+1. C21 - `app/internal/features/rbac/assign_roles/assign_roles_test.go:202,210-213`: the claim says both requests are held inside their transactions until each waits on a lock, but `LOCK TABLE sessions IN ACCESS EXCLUSIVE MODE` also blocks the authentication lookup (`app/internal/platform/auth/auth.go:99-101`), which runs before `WithTx` (`endpoint.go:68`); both counted waiters have `backend_xid` NULL. The kill of F1 (13/13) comes from a simultaneous release, not a forced interleave. Fix either the proof (a lock mode that blocks `DELETE FROM sessions` but not `SELECT`, e.g. `IN EXCLUSIVE MODE`, so the correct code parks one request on `sessions` and the other on the admin row, both in-transaction) or restate the claim.
