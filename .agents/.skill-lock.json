@@ -9,8 +9,7 @@
       "updatedAt": "2026-10-07T20:12:22.763Z",
       "agents": [
         "cursor",
-        "claude-code",
-        "windsurf"
+        "claude-code"
       ],
       "method": "copy",
       "global": false

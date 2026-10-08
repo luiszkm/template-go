@@ -1,6 +1,7 @@
 package webui_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -18,7 +19,7 @@ var site = fstest.MapFS{
 
 func get(path string) *httptest.ResponseRecorder {
 	rec := httptest.NewRecorder()
-	webui.Handler(site).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+	webui.Handler(site).ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, path, nil))
 	return rec
 }
 
@@ -40,4 +41,13 @@ func TestHandler_RootServesIndex(t *testing.T) {
 	rec := get("/")
 	require.Equal(t, http.StatusOK, rec.Code)
 	require.Equal(t, "<html>index</html>", rec.Body.String())
+}
+
+// C56
+func TestHandler_MissingBuildIs404Problem(t *testing.T) {
+	empty := fstest.MapFS{"assets/app.js": {Data: []byte("console.log('app')")}}
+	rec := httptest.NewRecorder()
+	webui.Handler(empty).ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/users/42", nil))
+	require.Equal(t, http.StatusNotFound, rec.Code)
+	require.Equal(t, "application/problem+json", rec.Header().Get("Content-Type"))
 }

@@ -38,10 +38,15 @@ func InstallProblems() {
 	}
 }
 
-// ProblemTransformer stamps the request id on every Problem Huma writes.
+// ProblemTransformer stamps the request id and the request path on every Problem Huma writes.
 func ProblemTransformer(ctx huma.Context, _ string, v any) (any, error) {
-	if p, ok := v.(*Problem); ok && p.RequestID == "" {
-		p.RequestID = RequestIDFrom(ctx.Context())
+	if p, ok := v.(*Problem); ok {
+		if p.RequestID == "" {
+			p.RequestID = RequestIDFrom(ctx.Context())
+		}
+		if p.Instance == "" {
+			p.Instance = ctx.URL().Path
+		}
 	}
 	return v, nil
 }
@@ -50,10 +55,11 @@ func ProblemTransformer(ctx huma.Context, _ string, v any) (any, error) {
 func WriteProblem(w http.ResponseWriter, r *http.Request, status int, detail string) {
 	p := Problem{
 		ErrorModel: huma.ErrorModel{
-			Type:   "about:blank",
-			Title:  http.StatusText(status),
-			Status: status,
-			Detail: detail,
+			Type:     "about:blank",
+			Title:    http.StatusText(status),
+			Status:   status,
+			Detail:   detail,
+			Instance: r.URL.Path,
 		},
 		RequestID: RequestIDFrom(r.Context()),
 	}

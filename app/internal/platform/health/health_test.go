@@ -34,7 +34,7 @@ func handler(t *testing.T, db health.DB, timeout time.Duration) http.Handler {
 
 func get(h http.Handler, path string) *httptest.ResponseRecorder {
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+	h.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, path, nil))
 	return rec
 }
 
@@ -72,15 +72,36 @@ func TestReadyz_503WhenDatabaseDown(t *testing.T) {
 	require.Less(t, time.Since(start), 3*time.Second)
 	require.Equal(t, http.StatusServiceUnavailable, rec.Code)
 	require.Equal(t, "application/problem+json", rec.Header().Get("Content-Type"))
-	var body map[string]any
+	var body struct {
+		Status int `json:"status"`
+	}
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &body))
-	require.Equal(t, float64(503), body["status"])
+	require.Equal(t, http.StatusServiceUnavailable, body.Status)
 }
 
-// A database that never answers is cut off by the timeout, not by the driver.
+// C67: a database that never answers is cut off by the timeout, not by the driver.
 func TestReadyz_503WhenDatabaseHangs(t *testing.T) {
-	rec := get(handler(t, hanging{}, 200*time.Millisecond), "/readyz")
+	const timeout = 200 * time.Millisecond
+	h := handler(t, hanging{}, timeout)
+	start := time.Now()
+	rec := get(h, "/readyz")
+	elapsed := time.Since(start)
 	require.Equal(t, http.StatusServiceUnavailable, rec.Code)
+	require.Equal(t, "application/problem+json", rec.Header().Get("Content-Type"))
+	require.GreaterOrEqual(t, elapsed, timeout, "503 must wait for the configured timeout")
+	require.Less(t, elapsed, 2*time.Second, "503 must arrive once the timeout elapses, not when the hang ends")
+}
+
+// C60
+func TestReadyz_503WhenDatabaseNotConfigured(t *testing.T) {
+	rec := get(handler(t, nil, time.Second), "/readyz")
+	require.Equal(t, http.StatusServiceUnavailable, rec.Code)
+	require.Equal(t, "application/problem+json", rec.Header().Get("Content-Type"))
+	var body struct {
+		Status int `json:"status"`
+	}
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &body))
+	require.Equal(t, http.StatusServiceUnavailable, body.Status)
 }
 
 type hanging struct{}

@@ -122,7 +122,7 @@ Quando isto entra, existe um esqueleto que sobe, um gerador que cria slices no p
 
 37. WHEN Claude Code writes or edits a `.go` file THEN the PostToolUse hook SHALL run `gofmt -w` on that file
 38. WHEN Claude Code finishes a turn THEN the Stop hook SHALL run `task check:fast` and report a non-zero exit back to the agent
-39. The repository SHALL contain `.cursor/rules/agents.mdc` with `alwaysApply: true` and `.windsurf/rules/agents.md` with `trigger: always_on`, each directing the agent to `AGENTS.md`
+39. The repository SHALL contain `.cursor/rules/agents.mdc` with `alwaysApply: true`, directing the agent to `AGENTS.md` (harness scoped to Claude Code and Cursor by the user on 2026-10-08; Windsurf removed)
 40. The `.github/workflows/ci.yml` workflow SHALL run `task check` and `task e2e` and fail when either exits non-zero
 
 **Independent test:** editar um `.go` mal formatado pelo Claude Code e ver o arquivo formatado; abrir o projeto no Cursor e ver a regra carregada.

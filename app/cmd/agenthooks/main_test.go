@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -79,5 +80,38 @@ func TestStopHook(t *testing.T) {
 		// The command fails if it runs, so exit 0 with no output proves it was skipped.
 		require.Equal(t, 0, stopHook(payload(t, map[string]any{"stop_hook_active": true}), &stderr, helperCmd("fail")))
 		require.Empty(t, stderr.String())
+	})
+}
+
+// C64
+func TestGofmtHook_NeverBlocks(t *testing.T) {
+	t.Run("malformed JSON payload", func(t *testing.T) {
+		var stderr bytes.Buffer
+		require.Equal(t, 0, gofmtHook(strings.NewReader(`{"tool_input": {"file_path": `), &stderr))
+		require.NotEmpty(t, stderr.String())
+	})
+
+	t.Run("file that does not exist", func(t *testing.T) {
+		dir := t.TempDir()
+		missing := filepath.Join(dir, "missing.go")
+		var stderr bytes.Buffer
+		require.Equal(t, 0, gofmtHook(payload(t, edit(missing)), &stderr))
+		require.NotEmpty(t, stderr.String())
+		require.NoFileExists(t, missing)
+		entries, err := os.ReadDir(dir)
+		require.NoError(t, err)
+		require.Empty(t, entries)
+	})
+
+	t.Run(".go file that does not parse", func(t *testing.T) {
+		goFile := filepath.Join(t.TempDir(), "broken.go")
+		src := []byte("package x\nfunc  F( {\nreturn}\n")
+		require.NoError(t, os.WriteFile(goFile, src, 0o644))
+		var stderr bytes.Buffer
+		require.Equal(t, 0, gofmtHook(payload(t, edit(goFile)), &stderr))
+		require.NotEmpty(t, stderr.String())
+		got, err := os.ReadFile(goFile)
+		require.NoError(t, err)
+		require.Equal(t, src, got)
 	})
 }

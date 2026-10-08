@@ -34,7 +34,7 @@ func newServer(t *testing.T) http.Handler {
 
 func get(h http.Handler, path string) *httptest.ResponseRecorder {
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+	h.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, path, nil))
 	return rec
 }
 
@@ -81,9 +81,21 @@ func TestNew_FailsOnInvalidOperation(t *testing.T) {
 	require.Contains(t, err.Error(), "no-permission-op")
 }
 
+// httpGet is http.Get bound to the test's context. It reports errors instead of failing,
+// because callers run it outside the test goroutine.
+func httpGet(t *testing.T, url string) (*http.Response, error) {
+	t.Helper()
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	return http.DefaultClient.Do(req)
+}
+
 func listen(t *testing.T) net.Listener {
 	t.Helper()
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	var lc net.ListenConfig
+	ln, err := lc.Listen(t.Context(), "tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 	return ln
 }
@@ -104,7 +116,7 @@ func TestRun_ShutdownDrainsInFlight(t *testing.T) {
 
 	status := make(chan int, 1)
 	go func() {
-		resp, err := http.Get(addr + "/slow")
+		resp, err := httpGet(t, addr+"/slow")
 		if err != nil {
 			status <- -1
 			return
@@ -116,7 +128,8 @@ func TestRun_ShutdownDrainsInFlight(t *testing.T) {
 	cancel()
 
 	require.Eventually(t, func() bool {
-		c, err := net.DialTimeout("tcp", ln.Addr().String(), 200*time.Millisecond)
+		d := net.Dialer{Timeout: 200 * time.Millisecond}
+		c, err := d.DialContext(t.Context(), "tcp", ln.Addr().String())
 		if err != nil {
 			return true
 		}
@@ -148,7 +161,7 @@ func TestRun_ShutdownTimeoutBoundsDrain(t *testing.T) {
 	runErr := make(chan error, 1)
 	go func() { runErr <- app.Run(ctx, srv, ln, 200*time.Millisecond, testkit.DiscardLogger()) }()
 	go func() {
-		resp, err := http.Get("http://" + ln.Addr().String() + "/stuck")
+		resp, err := httpGet(t, "http://"+ln.Addr().String()+"/stuck")
 		if err == nil {
 			_ = resp.Body.Close()
 		}
@@ -163,4 +176,28 @@ func TestRun_ShutdownTimeoutBoundsDrain(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("Run kept waiting past the shutdown timeout")
 	}
+}
+
+// C58
+func TestRouting_DocsServed(t *testing.T) {
+	rec := get(newServer(t), "/api/docs")
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Contains(t, rec.Header().Get("Content-Type"), "text/html")
+}
+
+// C68
+func TestRouting_NonGetOutsideAPIIs405Problem(t *testing.T) {
+	h := newServer(t)
+	for _, p := range []string{"/healthz", "/users"} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodPost, p, nil))
+		require.Equal(t, http.StatusMethodNotAllowed, rec.Code, p)
+		require.Equal(t, "application/problem+json", rec.Header().Get("Content-Type"), p)
+		require.NotContains(t, rec.Body.String(), "<html>spa</html>", p)
+	}
+	// SPA paths keep answering GET and HEAD.
+	require.Equal(t, "<html>spa</html>", get(h, "/users").Body.String())
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodHead, "/users", nil))
+	require.Equal(t, http.StatusOK, rec.Code)
 }

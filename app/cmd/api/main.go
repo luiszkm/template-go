@@ -87,7 +87,8 @@ func serve(ctx context.Context, cfg config.Config, log *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	ln, err := net.Listen("tcp", cfg.HTTPAddr)
+	var lc net.ListenConfig
+	ln, err := lc.Listen(ctx, "tcp", cfg.HTTPAddr)
 	if err != nil {
 		return err
 	}

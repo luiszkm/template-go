@@ -1,7 +1,6 @@
 package archtest_test
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -16,7 +15,7 @@ func TestCompositionRoot_CmdAPIUsesAppNew(t *testing.T) {
 	imports := pkgs[0].Imports
 	require.Contains(t, imports, "github.com/luiszkm/template-go/internal/app")
 	for imp := range imports {
-		require.False(t, strings.Contains(imp, "/internal/features"), "cmd/api must not wire features itself: %s", imp)
-		require.False(t, strings.Contains(imp, "huma/v2"), "cmd/api must not build its own API: %s", imp)
+		require.NotContains(t, imp, "/internal/features", "cmd/api must not wire features itself: %s", imp)
+		require.NotContains(t, imp, "huma/v2", "cmd/api must not build its own API: %s", imp)
 	}
 }

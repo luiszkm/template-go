@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"io/fs"
 	"os"
@@ -32,30 +33,31 @@ func generatedRepo(t *testing.T) string {
 	if os.Getenv(innerEnv) == "1" {
 		t.Skip("inside the repository copy started by TestGenerated_TaskCheckPasses")
 	}
-	genOnce.Do(func() {
-		src, err := filepath.Abs(filepath.Join("..", "..", ".."))
-		if err != nil {
-			genErr = err
-			return
-		}
-		dst, err := os.MkdirTemp("", "newslice-repo-")
-		if err != nil {
-			genErr = err
-			return
-		}
-		// Expand Windows 8.3 short names (LUIS~1.PER): Vite resolves its root through the long one.
-		if dst, err = filepath.EvalSymlinks(dst); err != nil {
-			genErr = err
-			return
-		}
-		genRoot = dst
-		if genErr = copyRepo(src, dst); genErr != nil {
-			return
-		}
-		genOut, genErr = runIn(dst, nil, "task", "new:slice", "FEATURE=demo", "NAME=get_thing")
-	})
+	genOnce.Do(func() { genRoot, genOut, genErr = buildGeneratedRepo() })
 	require.NoError(t, genErr, genOut)
 	return genRoot
+}
+
+// buildGeneratedRepo does the per-binary work behind generatedRepo. The copy is shared by every
+// test that asks for it, so it outlives any single test (no t.TempDir) and TestMain removes it.
+func buildGeneratedRepo() (root, out string, err error) {
+	src, err := filepath.Abs(filepath.Join("..", "..", ".."))
+	if err != nil {
+		return "", "", err
+	}
+	dst, err := os.MkdirTemp("", "newslice-repo-")
+	if err != nil {
+		return "", "", err
+	}
+	// Expand Windows 8.3 short names (LUIS~1.PER): Vite resolves its root through the long one.
+	if dst, err = filepath.EvalSymlinks(dst); err != nil {
+		return "", "", err
+	}
+	if err = copyRepo(src, dst); err != nil {
+		return dst, "", err
+	}
+	out, err = runIn(dst, nil, "task", "new:slice", "FEATURE=demo", "NAME=get_thing")
+	return dst, out, err
 }
 
 func TestMain(m *testing.M) {
@@ -72,7 +74,7 @@ var skipDirs = map[string]bool{
 }
 
 func copyRepo(src, dst string) error {
-	for _, top := range []string{"app", "web", "Taskfile.yml", "AGENTS.md", ".claude", ".cursor", ".windsurf", ".github"} {
+	for _, top := range []string{"app", "web", "Taskfile.yml", "AGENTS.md", ".claude", ".cursor", ".github"} {
 		if _, err := os.Stat(filepath.Join(src, top)); os.IsNotExist(err) {
 			continue
 		}
@@ -106,7 +108,7 @@ func linkDir(target, link string) error {
 	if err := os.Symlink(target, link); err == nil || runtime.GOOS != "windows" {
 		return err
 	}
-	out, err := exec.Command("cmd", "/c", "mklink", "/J", link, target).CombinedOutput()
+	out, err := exec.CommandContext(context.Background(), "cmd", "/c", "mklink", "/J", link, target).CombinedOutput()
 	if err != nil {
 		return &exec.ExitError{Stderr: out}
 	}
@@ -114,7 +116,7 @@ func linkDir(target, link string) error {
 }
 
 func runIn(dir string, env []string, name string, args ...string) (string, error) {
-	cmd := exec.Command(name, args...)
+	cmd := exec.CommandContext(context.Background(), name, args...)
 	cmd.Dir = dir
 	cmd.Env = append(os.Environ(), env...)
 	out, err := cmd.CombinedOutput()

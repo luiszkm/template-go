@@ -20,7 +20,7 @@
 **Feature**: foundation
 **Where**: C1-C55 built and green at `14cada0` (`task check` exit 0, `task e2e` 2/2); independent Verifier running over `a927e8b..HEAD`
 **In progress**: none
-**Next step**: read `.specs/features/foundation/verification.md`; on PASS, plan `users`
+**Next step**: read `.specs/features/foundation/verification.md`; on PASS, plan `users` with the `auth-security` skill loaded (its 8 rules become one-way doors/checks)
 **Blockers**: none
 **Uncommitted**: `.specs/STATE.md`
 **Branch**: `main` (local only, no remote)

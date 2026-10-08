@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -28,11 +29,10 @@ func main() {
 		fmt.Println("sqlcrun: no sqlc packages configured; nothing to do")
 		return
 	}
-	cmd := exec.Command("go", append([]string{"tool", "-modfile=tools/go.mod", "sqlc"}, os.Args[1:]...)...)
+	cmd := exec.CommandContext(context.Background(), "go", append([]string{"tool", "-modfile=tools/go.mod", "sqlc"}, os.Args[1:]...)...)
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 	if err := cmd.Run(); err != nil {
-		var exit *exec.ExitError
-		if errors.As(err, &exit) {
+		if exit, ok := errors.AsType[*exec.ExitError](err); ok {
 			os.Exit(exit.ExitCode())
 		}
 		fmt.Fprintln(os.Stderr, "sqlcrun:", err)

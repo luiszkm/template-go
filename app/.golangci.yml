@@ -6,7 +6,19 @@ linters:
     - gosec
     - misspell
     - errorlint
+    - testifylint
+    - nolintlint
+    - modernize
+    - noctx
+    - containedctx
+    - forcetypeassert
+    - nilerr
+    - usetesting
+    - thelper
+    - sloglint
   settings:
+    sloglint:
+      attr-only: true
     errcheck:
       exclude-functions:
         - fmt.Fprint

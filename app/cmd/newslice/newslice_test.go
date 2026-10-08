@@ -5,7 +5,9 @@ import (
 	"encoding/hex"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -134,4 +136,28 @@ func TestGenerate_MissingMarkerWritesNothing(t *testing.T) {
 	_, err := Generate(root, "users", "create_user")
 	require.ErrorContains(t, err, "slices:register")
 	require.Equal(t, before, treeHash(t, root))
+}
+
+// C66
+func TestMain_FailuresExit1(t *testing.T) {
+	bin := filepath.Join(t.TempDir(), "newslice")
+	if runtime.GOOS == "windows" {
+		bin += ".exe"
+	}
+	out, err := exec.CommandContext(t.Context(), "go", "build", "-o", bin, ".").CombinedOutput()
+	require.NoError(t, err, string(out))
+
+	cases := map[string][]string{
+		"invalid name":   {"--feature", "Users", "--name", "list"},
+		"existing slice": {"--feature", "users", "--name", "list_users"},
+	}
+	for name, args := range cases {
+		t.Run(name, func(t *testing.T) {
+			root := fixture(t)
+			out, err := exec.CommandContext(t.Context(), bin, append([]string{"--root", root}, args...)...).CombinedOutput()
+			var exitErr *exec.ExitError
+			require.ErrorAs(t, err, &exitErr, string(out))
+			require.Equal(t, 1, exitErr.ExitCode(), string(out))
+		})
+	}
 }

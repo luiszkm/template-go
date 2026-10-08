@@ -17,6 +17,7 @@ type empty struct{}
 func handler(context.Context, *empty) (*empty, error) { return &empty{}, nil }
 
 func newAPI(t *testing.T) huma.API {
+	t.Helper()
 	_, api := humatest.New(t, huma.DefaultConfig("t", "1"))
 	return api
 }
@@ -53,4 +54,12 @@ func TestRegister_AcceptsValidSpecs(t *testing.T) {
 func TestRegister_RejectsPermissionAndPublicTogether(t *testing.T) {
 	err := op.Register(newAPI(t), op.Spec{ID: "both", Method: http.MethodGet, Path: "/x", Public: true, Permission: "x:read"}, handler)
 	require.ErrorContains(t, err, "both")
+}
+
+// C59
+func TestRegister_RejectsMissingID(t *testing.T) {
+	err := op.Register(newAPI(t), op.Spec{Method: http.MethodGet, Path: "/things/{id}", Public: true}, handler)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), http.MethodGet)
+	require.Contains(t, err.Error(), "/things/{id}")
 }

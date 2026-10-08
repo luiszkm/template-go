@@ -8,6 +8,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"go/format"
@@ -80,7 +81,7 @@ func stopHook(stdin io.Reader, stderr io.Writer, cmd []string) int {
 	if payload.StopHookActive {
 		return 0
 	}
-	c := exec.Command(cmd[0], cmd[1:]...)
+	c := exec.CommandContext(context.Background(), cmd[0], cmd[1:]...)
 	out, err := c.CombinedOutput()
 	if err != nil {
 		fmt.Fprintf(stderr, "%s failed - fix before finishing:\n%s\n", strings.Join(cmd, " "), out)

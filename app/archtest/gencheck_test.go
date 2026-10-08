@@ -13,9 +13,16 @@ import (
 // copyApp copies the app module (without build output) into a temp dir.
 func copyApp(t *testing.T) string {
 	t.Helper()
+	dst := filepath.Join(t.TempDir(), "app")
+	copyAppTo(t, dst)
+	return dst
+}
+
+// copyAppTo copies the app module (without build output) into dst.
+func copyAppTo(t *testing.T, dst string) {
+	t.Helper()
 	src, err := filepath.Abs("..")
 	require.NoError(t, err)
-	dst := filepath.Join(t.TempDir(), "app")
 	require.NoError(t, filepath.WalkDir(src, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -33,12 +40,11 @@ func copyApp(t *testing.T) string {
 		}
 		return os.WriteFile(filepath.Join(dst, rel), raw, 0o644)
 	}))
-	return dst
 }
 
 func goIn(t *testing.T, dir string, args ...string) (string, error) {
 	t.Helper()
-	cmd := exec.Command("go", args...)
+	cmd := exec.CommandContext(t.Context(), "go", args...)
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
 	return string(out), err
@@ -74,4 +80,28 @@ func TestGenCheck_OpenAPIDriftFails(t *testing.T) {
 
 	out, err := goIn(t, app, "test", "-count=1", "./internal/app", "-run", "^TestOpenAPI_ServedMatchesCommitted$")
 	require.Error(t, err, "edited openapi.json must fail the check: %s", out)
+}
+
+// C65
+func TestTaskfile_GatesFailOnFailingStep(t *testing.T) {
+	// Expand Windows 8.3 short names (LUIS~1.PER): tools resolve paths through the long one.
+	root, err := filepath.EvalSymlinks(t.TempDir())
+	require.NoError(t, err)
+	raw, err := os.ReadFile(filepath.Join("..", "..", "Taskfile.yml"))
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(root, "Taskfile.yml"), raw, 0o644))
+	copyAppTo(t, filepath.Join(root, "app"))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "app", "unformatted.go"), []byte("package  main\nfunc  x( ) {}\n"), 0o644))
+
+	for _, gate := range []string{"check", "check:fast"} {
+		t.Run(gate, func(t *testing.T) {
+			cmd := exec.CommandContext(t.Context(), "task", gate)
+			cmd.Dir = root
+			out, err := cmd.CombinedOutput()
+			var exitErr *exec.ExitError
+			require.ErrorAs(t, err, &exitErr, "task %s must fail: %s", gate, out)
+			require.NotEqual(t, 0, exitErr.ExitCode())
+			require.Contains(t, string(out), "unformatted.go", "must fail at fmt:check on the unformatted file")
+		})
+	}
 }

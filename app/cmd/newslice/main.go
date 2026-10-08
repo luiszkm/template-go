@@ -184,7 +184,7 @@ func modulePath(goMod string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	for _, line := range strings.Split(string(raw), "\n") {
+	for line := range strings.SplitSeq(string(raw), "\n") {
 		if rest, ok := strings.CutPrefix(strings.TrimSpace(line), "module "); ok {
 			return strings.TrimSpace(rest), nil
 		}
@@ -274,7 +274,7 @@ func TestEndpoint_NotImplemented(t *testing.T) {
 	require.NoError(t, {{.Pkg}}.Register(httpx.NewAPI(mux), deps.Deps{}))
 
 	rec := httptest.NewRecorder()
-	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "{{.Path}}", nil))
+	mux.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "{{.Path}}", nil))
 
 	require.Equal(t, http.StatusNotImplemented, rec.Code)
 	require.Equal(t, "application/problem+json", rec.Header().Get("Content-Type"))

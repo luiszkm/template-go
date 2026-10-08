@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Single source of rules for every coding agent (Claude Code, Cursor, Windsurf). Project decisions live in
+Single source of rules for every coding agent (Claude Code and Cursor). Project decisions live in
 `.specs/STATE.md` `## Decisions` (AD-NNN) — read them before changing anything; they are constraints.
 
 ## Stack

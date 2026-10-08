@@ -2,6 +2,7 @@ package archtest_test
 
 import (
 	"encoding/json"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -43,7 +44,9 @@ func calledTasks(t *testing.T, tf taskfile, name string) []string {
 	for _, c := range task.Cmds {
 		m, ok := c.(map[string]any)
 		require.True(t, ok, "%s: every step must be `- task: <name>`, got %v", name, c)
-		out = append(out, m["task"].(string))
+		name, ok := m["task"].(string)
+		require.True(t, ok, "%s: `task:` must be a string, got %v", name, m["task"])
+		out = append(out, name)
 	}
 	return out
 }
@@ -128,12 +131,8 @@ func TestDependencies_Declared(t *testing.T) {
 	}
 	require.NoError(t, json.Unmarshal([]byte(readRepo(t, "web/package.json")), &pkg))
 	all := map[string]string{}
-	for k, v := range pkg.Dependencies {
-		all[k] = v
-	}
-	for k, v := range pkg.DevDependencies {
-		all[k] = v
-	}
+	maps.Copy(all, pkg.Dependencies)
+	maps.Copy(all, pkg.DevDependencies)
 	for _, name := range []string{
 		"react", "vite", "@tanstack/react-router", "@tanstack/react-query", "tailwindcss", "zod",
 		"react-hook-form", "openapi-typescript", "openapi-fetch", "vitest", "@testing-library/react",
@@ -186,9 +185,8 @@ func TestAgentRuleFiles(t *testing.T) {
 	require.Equal(t, true, fm["alwaysApply"])
 	require.Contains(t, body, "AGENTS.md")
 
-	fm, body = frontMatter(t, ".windsurf/rules/agents.md")
-	require.Equal(t, "always_on", fm["trigger"])
-	require.Contains(t, body, "AGENTS.md")
+	// The harness is Claude Code and Cursor only.
+	require.NoDirExists(t, filepath.Join(repoRoot, ".windsurf"))
 }
 
 // C54
@@ -204,14 +202,21 @@ func TestCIWorkflow_RunsCheckAndE2E(t *testing.T) {
 	}
 	require.NoError(t, yaml.Unmarshal([]byte(readRepo(t, ".github/workflows/ci.yml")), &wf))
 	var found []string
+	sameJob := false
 	for _, job := range wf.Jobs {
 		require.NotEqual(t, true, job.ContinueOnError)
+		var inJob []string
 		for _, s := range job.Steps {
 			require.NotEqual(t, true, s.ContinueOnError, "step %q", s.Run)
 			if s.Run == "task check" || s.Run == "task e2e" {
 				found = append(found, s.Run)
+				inJob = append(inJob, s.Run)
 			}
+		}
+		if len(inJob) == 2 && inJob[0] == "task check" && inJob[1] == "task e2e" {
+			sameJob = true
 		}
 	}
 	require.ElementsMatch(t, []string{"task check", "task e2e"}, found)
+	require.True(t, sameJob, "task check and task e2e must run in the same job, task check first")
 }

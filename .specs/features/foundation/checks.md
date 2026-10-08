@@ -187,7 +187,7 @@ Proof: `go -C app test ./cmd/agenthooks -run '^TestStopHook$'`
 **C52** - `.claude/settings.json` wires `PostToolUse` (matcher `Edit|Write|MultiEdit`) to the gofmt hook and `Stop` to the stop hook (FND-06, AC 37, AC 38) `[done]`
 Proof: `go -C app test ./archtest -run '^TestClaudeSettings_WiresHooks$'`
 
-**C53** - `.cursor/rules/agents.mdc` has front-matter `alwaysApply: true` and `.windsurf/rules/agents.md` has `trigger: always_on`, and both bodies reference `AGENTS.md` (FND-06, AC 39) `[done]`
+**C53** - `.cursor/rules/agents.mdc` has front-matter `alwaysApply: true` and its body references `AGENTS.md`; no `.windsurf/` directory exists (amended with user approval 2026-10-08: harness is Claude Code and Cursor only) (FND-06, AC 39) `[done]`
 Proof: `go -C app test ./archtest -run '^TestAgentRuleFiles$'`
 
 **C54** - `.github/workflows/ci.yml` has a job whose steps run `task check` and `task e2e`, with no `continue-on-error: true` (FND-06, AC 40) `[done]`
@@ -198,43 +198,43 @@ Proof: `go -C app test ./archtest -run '^TestTaskfile_CheckFastSteps$'`
 
 ### S7 - Correções da verificação rodada 1 (aprovadas pelo usuário em 2026-10-08) · ~14 files · ~40 KB · ~10k
 
-**C56** - With an embedded build that has no `index.html`, the `webui` handler answers `GET /users/42` with `404` and content type `application/problem+json` (FND-02, AC 8, door 9)
+**C56** - With an embedded build that has no `index.html`, the `webui` handler answers `GET /users/42` with `404` and content type `application/problem+json` (FND-02, AC 8, door 9) `[done]`
 Proof: `go -C app test ./internal/platform/webui -run '^TestHandler_MissingBuildIs404Problem$'`
 
-**C57** - Every Problem response carries `instance` equal to the request path, for a `404` (router), a `500` (panic) and a `503` (Huma error) (FND-02, AC 8, door 3)
+**C57** - Every Problem response carries `instance` equal to the request path, for a `404` (router), a `500` (panic) and a `503` (Huma error) (FND-02, AC 8, door 3) `[done]`
 Proof: `go -C app test ./internal/platform/httpx -run '^TestProblem_InstanceIsRequestPath$'`
 
-**C58** - In the assembled server `GET /api/docs` returns `200` with a `text/html` content type (door 2)
+**C58** - In the assembled server `GET /api/docs` returns `200` with a `text/html` content type (door 2) `[done]`
 Proof: `go -C app test ./internal/app -run '^TestRouting_DocsServed$'`
 
-**C59** - Registering a spec with an empty `ID` returns an error naming its method and path (FND-02, AC 16)
+**C59** - Registering a spec with an empty `ID` returns an error naming its method and path (FND-02, AC 16) `[done]`
 Proof: `go -C app test ./internal/platform/op -run '^TestRegister_RejectsMissingID$'`
 
-**C60** - `GET /readyz` with no database configured returns `503` with an `application/problem+json` body (FND-01, AC 3)
+**C60** - `GET /readyz` with no database configured returns `503` with an `application/problem+json` body (FND-01, AC 3) `[done]`
 Proof: `go -C app test ./internal/platform/health -run '^TestReadyz_503WhenDatabaseNotConfigured$'`
 
-**C61** - A handler panicking with `http.ErrAbortHandler` is re-panicked by Recover: no `500` body is written and no `ERROR` entry is logged (FND-02, AC 10, AC 11)
+**C61** - A handler panicking with `http.ErrAbortHandler` is re-panicked by Recover: no `500` body is written and no `ERROR` entry is logged (FND-02, AC 10, AC 11) `[done]`
 Proof: `go -C app test ./internal/platform/httpx -run '^TestRecover_RepanicsAbortHandler$'`
 
-**C62** - `api` with an unknown subcommand exits `2` and writes the usage line to stderr (FND-01, AC 4)
+**C62** - `api` with an unknown subcommand exits `2` and writes the usage line to stderr (FND-01, AC 4) `[done]`
 Proof: `go -C app test ./cmd/api -run '^TestRun_UnknownCommandExits2$'`
 
-**C63** - `api migrate up` against an unreachable database exits `1` and writes `migrate up:` to stderr (FND-01, AC 6)
+**C63** - `api migrate up` against an unreachable database exits `1` and writes `migrate up:` to stderr (FND-01, AC 6) `[done]`
 Proof: `go -C app test ./cmd/api -run '^TestMigrateUp_UnreachableDatabaseExits1$'`
 
-**C64** - The gofmt hook never blocks the agent: a malformed JSON payload, a missing file, and a `.go` file that does not parse each exit `0`, write a message to stderr, and leave files unchanged (FND-06, AC 37)
+**C64** - The gofmt hook never blocks the agent: a malformed JSON payload, a missing file, and a `.go` file that does not parse each exit `0`, write a message to stderr, and leave files unchanged (FND-06, AC 37) `[done]`
 Proof: `go -C app test ./cmd/agenthooks -run '^TestGofmtHook_NeverBlocks$'`
 
-**C65** - In a temp copy with one unformatted `.go` file, `task check` and `task check:fast` each exit non-zero (FND-03, AC 23; FND-06, AC 38)
+**C65** - In a temp copy with one unformatted `.go` file, `task check` and `task check:fast` each exit non-zero (FND-03, AC 23; FND-06, AC 38) `[done]`
 Proof: `go -C app test ./archtest -run '^TestTaskfile_GatesFailOnFailingStep$'`
 
-**C66** - The built `newslice` binary exits `1` for an invalid name and for an existing slice (FND-04, AC 28, AC 29)
+**C66** - The built `newslice` binary exits `1` for an invalid name and for an existing slice (FND-04, AC 28, AC 29) `[done]`
 Proof: `go -C app test ./cmd/newslice -run '^TestMain_FailuresExit1$'`
 
-**C67** - A database that never answers yields `503` from `/readyz` once the configured timeout elapses, not when the driver gives up (FND-01, AC 3)
+**C67** - A database that never answers yields `503` from `/readyz` once the configured timeout elapses, not when the driver gives up (FND-01, AC 3) `[done]`
 Proof: `go -C app test ./internal/platform/health -run '^TestReadyz_503WhenDatabaseHangs$'`
 
-**C68** - A `POST` to a path outside `/api/` (e.g. `/healthz`, `/users`) gets `405` with an `application/problem+json` body, never the SPA (FND-02, AC 8, door 9)
+**C68** - A `POST` to a path outside `/api/` (e.g. `/healthz`, `/users`) gets `405` with an `application/problem+json` body, never the SPA (FND-02, AC 8, door 9) `[done]`
 Proof: `go -C app test ./internal/app -run '^TestRouting_NonGetOutsideAPIIs405Problem$'`
 
 ## Coverage
@@ -265,7 +265,7 @@ Proof: `go -C app test ./internal/app -run '^TestRouting_NonGetOutsideAPIIs405Pr
 | `webui` routing (5) | SPA fallback C44 · static file C45 · API/health excluded C46 · missing build C56 · non-GET C68 | - |
 | dev proxy prefixes (3) | C48, table-driven over all 3 | - |
 | Stop hook branches (3) | failing C51 · passing C51 · `stop_hook_active` C51 | - |
-| agent rule files (2) | Cursor C53 · Windsurf C53 | - |
+| agent rule files (1) | Cursor C53 | - |
 | CI steps (2) | `task check` C54 · `task e2e` C54 | - |
 | `/readyz` branches (4) | ready C2 · DB down C3 · DB hangs C67 · DB not configured C60 | - |
 | Recover branches (2) | panic -> 500 C13 · `ErrAbortHandler` re-panicked C61 | - |

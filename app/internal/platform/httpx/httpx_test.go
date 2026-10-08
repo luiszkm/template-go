@@ -19,10 +19,20 @@ import (
 
 type logBuf struct{ bytes.Buffer }
 
+// intField returns m[key] as an int, failing unless the JSON value is an integer.
+func intField(t *testing.T, m map[string]any, key string) int {
+	t.Helper()
+	raw, err := json.Marshal(m[key])
+	require.NoError(t, err)
+	var n int
+	require.NoError(t, json.Unmarshal(raw, &n), "%s must be an integer, got %s", key, raw)
+	return n
+}
+
 func (b *logBuf) entries(t *testing.T) []map[string]any {
 	t.Helper()
 	var out []map[string]any
-	for _, line := range strings.Split(strings.TrimSpace(b.String()), "\n") {
+	for line := range strings.SplitSeq(strings.TrimSpace(b.String()), "\n") {
 		if line == "" {
 			continue
 		}
@@ -50,7 +60,7 @@ func server(t *testing.T) (http.Handler, *logBuf) {
 }
 
 func do(h http.Handler, method, path string, hdr map[string]string) *httptest.ResponseRecorder {
-	req := httptest.NewRequest(method, path, nil)
+	req := httptest.NewRequestWithContext(context.Background(), method, path, nil)
 	for k, v := range hdr {
 		req.Header.Set(k, v)
 	}
@@ -72,7 +82,7 @@ func TestProblem_HasRequiredFields(t *testing.T) {
 		for _, field := range []string{"type", "title", "status", "detail", "request_id"} {
 			require.Contains(t, body, field, "%s missing %s", path, field)
 		}
-		require.Equal(t, float64(status), body["status"], path)
+		require.Equal(t, status, intField(t, body, "status"), path)
 		require.Equal(t, rec.Header().Get(httpx.HeaderRequestID), body["request_id"], path)
 		require.NotEmpty(t, body["request_id"], path)
 	}
@@ -138,5 +148,42 @@ func TestAccessLog_HasAllKeys(t *testing.T) {
 	require.Equal(t, "r-1", e["request_id"])
 	require.Equal(t, "GET", e["method"])
 	require.Equal(t, "/api/unavailable", e["path"])
-	require.Equal(t, float64(503), e["status"])
+	require.Equal(t, http.StatusServiceUnavailable, intField(t, e, "status"))
+}
+
+// C57
+func TestProblem_InstanceIsRequestPath(t *testing.T) {
+	h, _ := server(t)
+	cases := map[int]string{404: "/api/nope", 500: "/api/panic", 503: "/api/unavailable"}
+	for status, path := range cases {
+		rec := do(h, http.MethodGet, path, nil)
+		require.Equal(t, status, rec.Code, path)
+		require.Equal(t, "application/problem+json", rec.Header().Get("Content-Type"), path)
+		var body map[string]any
+		require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &body), path)
+		require.Equal(t, path, body["instance"], path)
+	}
+}
+
+// C61
+func TestRecover_RepanicsAbortHandler(t *testing.T) {
+	buf := &logBuf{}
+	log := slog.New(slog.NewJSONHandler(buf, nil))
+	h := httpx.Recover(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		panic(http.ErrAbortHandler)
+	}), log)
+	rec := httptest.NewRecorder()
+
+	var got any
+	func() {
+		defer func() { got = recover() }()
+		h.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/abort", nil))
+	}()
+
+	require.Equal(t, http.ErrAbortHandler, got, "Recover must re-panic http.ErrAbortHandler")
+	require.Empty(t, rec.Body.String(), "no Problem body may be written")
+	require.NotEqual(t, http.StatusInternalServerError, rec.Code)
+	for _, e := range buf.entries(t) {
+		require.NotEqual(t, "ERROR", e["level"], "no ERROR entry may be logged")
+	}
 }

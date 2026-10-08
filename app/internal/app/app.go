@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"log/slog"
 	"net"
@@ -37,7 +36,7 @@ type Options struct {
 // New assembles the whole HTTP server. It fails if any operation violates the op contract.
 func New(o Options) (http.Handler, error) {
 	if o.Logger == nil {
-		o.Logger = slog.New(slog.NewJSONHandler(io.Discard, nil))
+		o.Logger = slog.New(slog.DiscardHandler)
 	}
 	if o.ReadyTimeout == 0 {
 		o.ReadyTimeout = 2 * time.Second
@@ -72,7 +71,7 @@ func New(o Options) (http.Handler, error) {
 // OpenAPI returns the contract exactly as GET /api/openapi.json serves it.
 func OpenAPI(h http.Handler) ([]byte, error) {
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/openapi.json", nil))
+	h.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/openapi.json", nil))
 	if rec.Code != http.StatusOK {
 		return nil, fmt.Errorf("app: openapi export: status %d", rec.Code)
 	}

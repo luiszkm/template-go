@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"path"
 	"strings"
+
+	"github.com/luiszkm/template-go/internal/platform/httpx"
 )
 
 //go:embed all:dist
@@ -22,9 +24,15 @@ func Dist() fs.FS {
 }
 
 // Handler serves files from fsys; any path that is not a file gets index.html with 200.
+// Only GET and HEAD are served; any other method gets a 405 Problem.
 func Handler(fsys fs.FS) http.Handler {
 	files := http.FileServerFS(fsys)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+			w.Header().Set("Allow", "GET, HEAD")
+			httpx.WriteProblem(w, r, http.StatusMethodNotAllowed, "method "+r.Method+" not allowed on "+r.URL.Path)
+			return
+		}
 		name := strings.TrimPrefix(path.Clean(r.URL.Path), "/")
 		if name != "" && name != "index.html" {
 			if info, err := fs.Stat(fsys, name); err == nil && !info.IsDir() {
@@ -34,7 +42,7 @@ func Handler(fsys fs.FS) http.Handler {
 		}
 		index, err := fs.ReadFile(fsys, "index.html")
 		if err != nil {
-			http.Error(w, "web build not found: run `task build`", http.StatusNotFound)
+			httpx.WriteProblem(w, r, http.StatusNotFound, "web build not found: run `task build`")
 			return
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
