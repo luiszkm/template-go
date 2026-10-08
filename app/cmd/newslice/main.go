@@ -1,12 +1,3 @@
-// Command newslice creates a vertical slice and wires it in:
-//
-//	newslice --feature users --name create_user [--root .]
-//
-// It writes internal/features/<feature>/<name>/{endpoint.go,queries.sql,<name>_test.go},
-// registers the slice in internal/features/<feature>/register.go (creating the feature and
-// registering it in internal/features/registry.go when needed) and adds an sqlc.yaml entry.
-// Every input is validated and every edit is computed before the first file is written.
-// Run `task gen` afterwards (task new:slice does) to refresh sqlc, OpenAPI and web types.
 package main
 
 import (
@@ -40,7 +31,6 @@ func main() {
 	}
 }
 
-// Generate validates, plans every write, then writes. It returns the paths written.
 func Generate(root, feature, name string) ([]string, error) {
 	if !validName.MatchString(feature) {
 		return nil, fmt.Errorf("invalid FEATURE %q: must match %s", feature, validName)
@@ -155,8 +145,6 @@ func render(t *template.Template, d data, goSource bool) ([]byte, error) {
 	return format.Source(buf.Bytes())
 }
 
-// insert adds an import before the "// <kind>:imports" marker and a call before the
-// "// <kind>:register" marker, then gofmts the file.
 func insert(src []byte, path, kind, importLine, callLine string) ([]byte, error) {
 	s := string(src)
 	for _, m := range []struct{ marker, line string }{
@@ -175,7 +163,7 @@ func insert(src []byte, path, kind, importLine, callLine string) ([]byte, error)
 
 func appendSQLCEntry(cfg, entry []byte) []byte {
 	s := strings.TrimRight(string(cfg), "\n")
-	s = strings.TrimSuffix(s, " []") // "sql: []" becomes "sql:" followed by the first entry
+	s = strings.TrimSuffix(s, " []")
 	return []byte(s + "\n" + string(entry))
 }
 
@@ -192,8 +180,6 @@ func modulePath(goMod string) (string, error) {
 	return "", fmt.Errorf("%s: no module line", goMod)
 }
 
-// importSpec aliases the import when the package name differs from its folder (create_user ->
-// createuser), which goimports requires.
 func importSpec(pkg, folder, path string) string {
 	if pkg == folder {
 		return fmt.Sprintf("%q", path)

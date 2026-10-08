@@ -14,7 +14,6 @@ const networkError = () => Promise.reject(new TypeError("Failed to fetch"));
 const readyz = (urls: string[]) => urls.filter((u) => u.endsWith("/readyz"));
 
 describe("ApiStatus on /", () => {
-  // C39
   it("shows online when readyz answers 200", async () => {
     const calls = stubFetch(ready);
     renderAt("/");
@@ -22,7 +21,6 @@ describe("ApiStatus on /", () => {
     expect(readyz(calls)).toHaveLength(1);
   });
 
-  // C40
   it("shows offline with a retry button when readyz answers 503", async () => {
     stubFetch(down);
     renderAt("/");
@@ -30,7 +28,6 @@ describe("ApiStatus on /", () => {
     expect(screen.getByRole("button", { name: "Tentar novamente" })).toBeInTheDocument();
   });
 
-  // C40
   it("shows offline with a retry button when readyz fails at the network", async () => {
     stubFetch(networkError);
     renderAt("/");
@@ -38,7 +35,6 @@ describe("ApiStatus on /", () => {
     expect(screen.getByRole("button", { name: "Tentar novamente" })).toBeInTheDocument();
   });
 
-  // C41
   it("retry requests readyz again", async () => {
     const calls = stubFetch(down, ready);
     renderAt("/");
@@ -47,7 +43,6 @@ describe("ApiStatus on /", () => {
     expect(readyz(calls)).toHaveLength(2);
   });
 
-  // C42
   it("shows a status element while readyz is pending", async () => {
     let resolve: (r: Response) => void = () => {};
     stubFetch(

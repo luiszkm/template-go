@@ -4,7 +4,6 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
-// Backend paths the dev server forwards to `api serve`, so the SPA stays same-origin (AD-005).
 export const backendProxy = {
   "/api": "http://localhost:8080",
   "/healthz": "http://localhost:8080",

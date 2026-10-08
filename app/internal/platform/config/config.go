@@ -1,4 +1,3 @@
-// Package config loads process configuration from environment variables.
 package config
 
 import (
@@ -10,7 +9,6 @@ import (
 	"github.com/caarlos0/env/v11"
 )
 
-// Config is the whole runtime configuration. Every field comes from the environment.
 type Config struct {
 	DatabaseURL     string        `env:"DATABASE_URL,required,notEmpty"`
 	HTTPAddr        string        `env:"HTTP_ADDR" envDefault:":8080"`
@@ -50,7 +48,6 @@ func (p *Prefixes) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// Load parses the given environment (as returned by env.ToMap(os.Environ())).
 func Load(environ map[string]string) (Config, error) {
 	return env.ParseAsWithOptions[Config](env.Options{Environment: environ})
 }

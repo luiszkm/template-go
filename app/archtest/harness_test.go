@@ -35,7 +35,6 @@ func loadTaskfile(t *testing.T) taskfile {
 	return tf
 }
 
-// calledTasks returns the names of `- task: <name>` entries, in order.
 func calledTasks(t *testing.T, tf taskfile, name string) []string {
 	t.Helper()
 	task, ok := tf.Tasks[name]
@@ -72,7 +71,6 @@ func commands(t *testing.T, tf taskfile, name string) string {
 	return task.Dir + ": " + strings.Join(out, " && ")
 }
 
-// C30
 func TestTaskfile_CheckRunsAllSteps(t *testing.T) {
 	tf := loadTaskfile(t)
 	steps := calledTasks(t, tf, "check")
@@ -93,14 +91,12 @@ func TestTaskfile_CheckRunsAllSteps(t *testing.T) {
 	require.Contains(t, commands(t, tf, "web:test"), "npm test")
 }
 
-// C55
 func TestTaskfile_CheckFastSteps(t *testing.T) {
 	tf := loadTaskfile(t)
 	require.Equal(t, []string{"fmt:check", "vet", "archtest", "web:typecheck"}, calledTasks(t, tf, "check:fast"))
 	require.Contains(t, commands(t, tf, "vet"), "go vet ./...")
 }
 
-// C31
 func TestModuleLayout(t *testing.T) {
 	require.True(t, strings.HasPrefix(readRepo(t, "app/go.mod"), "module github.com/luiszkm/template-go\n"))
 	tools := readRepo(t, "app/tools/go.mod")
@@ -114,7 +110,6 @@ func TestModuleLayout(t *testing.T) {
 	require.NoFileExists(t, filepath.Join(repoRoot, "go.mod"))
 }
 
-// C32
 func TestDependencies_Declared(t *testing.T) {
 	gomod := readRepo(t, "app/go.mod")
 	for _, mod := range []string{
@@ -144,7 +139,6 @@ func TestDependencies_Declared(t *testing.T) {
 	require.True(t, strings.HasPrefix(strings.TrimLeft(all["tailwindcss"], "^~"), "4."), all["tailwindcss"])
 }
 
-// C52
 func TestClaudeSettings_WiresHooks(t *testing.T) {
 	var settings struct {
 		Hooks map[string][]struct {
@@ -179,17 +173,14 @@ func frontMatter(t *testing.T, rel string) (map[string]any, string) {
 	return fm, parts[2]
 }
 
-// C53
 func TestAgentRuleFiles(t *testing.T) {
 	fm, body := frontMatter(t, ".cursor/rules/agents.mdc")
 	require.Equal(t, true, fm["alwaysApply"])
 	require.Contains(t, body, "AGENTS.md")
 
-	// The harness is Claude Code and Cursor only.
 	require.NoDirExists(t, filepath.Join(repoRoot, ".windsurf"))
 }
 
-// C54
 func TestCIWorkflow_RunsCheckAndE2E(t *testing.T) {
 	var wf struct {
 		Jobs map[string]struct {

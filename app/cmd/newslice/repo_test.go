@@ -15,8 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// innerEnv marks the `task check` run that TestGenerated_TaskCheckPasses starts inside a
-// copy of the repository; without it the copy would run this test again, recursively.
 const innerEnv = "NEWSLICE_INNER_CHECK"
 
 var (
@@ -26,8 +24,6 @@ var (
 	genOut  string
 )
 
-// generatedRepo copies the repository to a temp dir (linking web/node_modules) and runs
-// `task new:slice FEATURE=demo NAME=get_thing` there, once per test binary.
 func generatedRepo(t *testing.T) string {
 	t.Helper()
 	if os.Getenv(innerEnv) == "1" {
@@ -38,8 +34,6 @@ func generatedRepo(t *testing.T) string {
 	return genRoot
 }
 
-// buildGeneratedRepo does the per-binary work behind generatedRepo. The copy is shared by every
-// test that asks for it, so it outlives any single test (no t.TempDir) and TestMain removes it.
 func buildGeneratedRepo() (root, out string, err error) {
 	src, err := filepath.Abs(filepath.Join("..", "..", ".."))
 	if err != nil {
@@ -49,7 +43,6 @@ func buildGeneratedRepo() (root, out string, err error) {
 	if err != nil {
 		return "", "", err
 	}
-	// Expand Windows 8.3 short names (LUIS~1.PER): Vite resolves its root through the long one.
 	if dst, err = filepath.EvalSymlinks(dst); err != nil {
 		return "", "", err
 	}
@@ -103,7 +96,6 @@ func copyRepo(src, dst string) error {
 	return linkDir(filepath.Join(src, "web", "node_modules"), filepath.Join(dst, "web", "node_modules"))
 }
 
-// linkDir symlinks a directory, falling back to a junction on Windows (no privilege needed).
 func linkDir(target, link string) error {
 	if err := os.Symlink(target, link); err == nil || runtime.GOOS != "windows" {
 		return err
@@ -123,14 +115,12 @@ func runIn(dir string, env []string, name string, args ...string) (string, error
 	return string(out), err
 }
 
-// C35
 func TestGenerated_TaskCheckPasses(t *testing.T) {
 	root := generatedRepo(t)
 	out, err := runIn(root, []string{innerEnv + "=1"}, "task", "check")
 	require.NoError(t, err, out)
 }
 
-// C36
 func TestGenerated_SliceAnswers501(t *testing.T) {
 	root := generatedRepo(t)
 	app := filepath.Join(root, "app")

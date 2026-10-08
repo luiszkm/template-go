@@ -7,7 +7,6 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-// C22: the binary builds its server through app.New, so tests and production share one assembly.
 func TestCompositionRoot_CmdAPIUsesAppNew(t *testing.T) {
 	pkgs, err := packages.Load(&packages.Config{Mode: packages.NeedName | packages.NeedImports, Dir: ".."}, "./cmd/api")
 	require.NoError(t, err)

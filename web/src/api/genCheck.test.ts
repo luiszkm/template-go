@@ -12,7 +12,6 @@ const run = (...args: string[]) =>
   });
 
 describe("gen:check", () => {
-  // C29
   it("drift fails", () => {
     const edited = join(mkdtempSync(join(tmpdir(), "drift-")), "schema.d.ts");
     copyFileSync(join(web, "src", "api", "schema.d.ts"), edited);
@@ -20,7 +19,6 @@ describe("gen:check", () => {
     expect(run(spec, edited).status).not.toBe(0);
   }, 30_000);
 
-  // C29
   it("committed schema passes", () => {
     const res = run();
     expect(res.stderr).toBe("");

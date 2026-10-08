@@ -10,7 +10,6 @@ import (
 	"github.com/luiszkm/template-go/internal/platform/config"
 )
 
-// C6: the shutdown drain defaults to exactly 10s.
 func TestDefaults_ShutdownTimeoutIs10s(t *testing.T) {
 	cfg, err := config.Load(map[string]string{"DATABASE_URL": "postgres://x"})
 	require.NoError(t, err)

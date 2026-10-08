@@ -16,8 +16,6 @@ import (
 
 const module = "github.com/luiszkm/template-go"
 
-// fixture is a minimal app tree: go.mod, the real registry.go and sqlc.yaml, and an existing
-// "users" feature with one slice.
 func fixture(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
@@ -64,7 +62,6 @@ func treeHash(t *testing.T, root string) map[string]string {
 	return sums
 }
 
-// C33
 func TestGenerate_CreatesSliceAndRegisters(t *testing.T) {
 	root := fixture(t)
 	entriesBefore := strings.Count(read(t, root, "sqlc.yaml"), "- engine:")
@@ -85,7 +82,6 @@ func TestGenerate_CreatesSliceAndRegisters(t *testing.T) {
 	require.Equal(t, registryBefore, read(t, root, "internal/features/registry.go"), "existing feature: registry untouched")
 }
 
-// C34
 func TestGenerate_NewFeatureRegistersFeature(t *testing.T) {
 	root := fixture(t)
 	_, err := Generate(root, "billing", "get_invoice")
@@ -100,7 +96,6 @@ func TestGenerate_NewFeatureRegistersFeature(t *testing.T) {
 	require.Contains(t, registry, "users.Register(api, d),")
 }
 
-// C37
 func TestGenerate_RefusesExistingSlice(t *testing.T) {
 	root := fixture(t)
 	before := treeHash(t, root)
@@ -109,7 +104,6 @@ func TestGenerate_RefusesExistingSlice(t *testing.T) {
 	require.Equal(t, before, treeHash(t, root))
 }
 
-// C38
 func TestGenerate_RejectsInvalidNames(t *testing.T) {
 	cases := []struct{ feature, name string }{
 		{"Users", "list"},
@@ -138,7 +132,6 @@ func TestGenerate_MissingMarkerWritesNothing(t *testing.T) {
 	require.Equal(t, before, treeHash(t, root))
 }
 
-// C66
 func TestMain_FailuresExit1(t *testing.T) {
 	bin := filepath.Join(t.TempDir(), "newslice")
 	if runtime.GOOS == "windows" {

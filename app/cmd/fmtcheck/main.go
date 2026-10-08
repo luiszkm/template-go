@@ -1,5 +1,3 @@
-// Command fmtcheck lists Go files that are not gofmt-formatted and exits 1 if there are any.
-// It is `gofmt -l` without needing gofmt or a POSIX shell on PATH.
 package main
 
 import (

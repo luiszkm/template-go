@@ -1,5 +1,3 @@
-// Command webcopy replaces the embedded SPA build: webcopy <src dist> <dst dir>.
-// It keeps dst/.gitkeep so the go:embed directive always has a directory to read.
 package main
 
 import (

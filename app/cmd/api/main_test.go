@@ -23,7 +23,6 @@ import (
 	"github.com/luiszkm/template-go/migrations"
 )
 
-// C4
 func TestServe_MissingDatabaseURLExits1(t *testing.T) {
 	bin := filepath.Join(t.TempDir(), "api")
 	if runtime.GOOS == "windows" {
@@ -81,7 +80,6 @@ func runCmd(t *testing.T, url string, args ...string) (int, string) {
 	return code, errb.String()
 }
 
-// C7
 func TestMigrateUp_AppliesPending(t *testing.T) {
 	pg := testkit.StartPostgres(t)
 	code, stderr := runCmd(t, pg.URL, "migrate", "up")
@@ -89,7 +87,6 @@ func TestMigrateUp_AppliesPending(t *testing.T) {
 	require.Equal(t, newestMigrationVersion(t), gooseVersion(t, pg.URL))
 }
 
-// C8
 func TestMigrateUp_RerunIsNoop(t *testing.T) {
 	pg := testkit.StartPostgres(t)
 	code, stderr := runCmd(t, pg.URL, "migrate", "up")
@@ -110,7 +107,6 @@ func TestMigrateUp_RerunIsNoop(t *testing.T) {
 	require.Equal(t, rowsBefore, rowsAfter)
 }
 
-// C9
 func TestServe_DoesNotMigrate(t *testing.T) {
 	pg := testkit.StartPostgres(t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -132,7 +128,6 @@ func TestServe_DoesNotMigrate(t *testing.T) {
 	require.False(t, exists)
 }
 
-// freeAddr returns a loopback address with a port that was free a moment ago.
 func freeAddr(t *testing.T) string {
 	t.Helper()
 	var lc net.ListenConfig
@@ -143,7 +138,6 @@ func freeAddr(t *testing.T) string {
 	return addr
 }
 
-// waitServing polls url until it answers 200, failing if the server exits or the deadline passes.
 func waitServing(t *testing.T, url string, done <-chan int) {
 	t.Helper()
 	client := &http.Client{Timeout: time.Second}
@@ -168,7 +162,6 @@ func waitServing(t *testing.T, url string, done <-chan int) {
 	t.Fatalf("%s did not answer 200 within the deadline", url)
 }
 
-// C62
 func TestRun_UnknownCommandExits2(t *testing.T) {
 	var out, errb bytes.Buffer
 	code := run(context.Background(), []string{"frobnicate"}, map[string]string{}, nil, &out, &errb)
@@ -176,7 +169,6 @@ func TestRun_UnknownCommandExits2(t *testing.T) {
 	require.Contains(t, errb.String(), "usage: api serve | api migrate up | api openapi")
 }
 
-// C63
 func TestMigrateUp_UnreachableDatabaseExits1(t *testing.T) {
 	code, stderr := runCmd(t, "postgres://app:app@127.0.0.1:1/app?sslmode=disable&connect_timeout=5", "migrate", "up")
 	require.Equal(t, 1, code, stderr)
@@ -187,7 +179,6 @@ type failingWriter struct{}
 
 func (failingWriter) Write([]byte) (int, error) { return 0, errors.New("disk full") }
 
-// C69
 func TestOpenAPI_WriteFailureExits1(t *testing.T) {
 	var errb bytes.Buffer
 	code := run(context.Background(), []string{"openapi"}, map[string]string{}, nil, failingWriter{}, &errb)

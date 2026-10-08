@@ -22,14 +22,12 @@ func newAPI(t *testing.T) huma.API {
 	return api
 }
 
-// C19
 func TestRegister_RejectsMissingPermission(t *testing.T) {
 	err := op.Register(newAPI(t), op.Spec{ID: "list-things", Method: http.MethodGet, Path: "/things"}, handler)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "list-things")
 }
 
-// C20
 func TestRegister_RejectsMutationWithoutAudit(t *testing.T) {
 	for _, m := range []string{http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete} {
 		t.Run(m, func(t *testing.T) {
@@ -40,7 +38,6 @@ func TestRegister_RejectsMutationWithoutAudit(t *testing.T) {
 	}
 }
 
-// C21
 func TestRegister_AcceptsValidSpecs(t *testing.T) {
 	api := newAPI(t)
 	require.NoError(t, op.Register(api, op.Spec{ID: "public-get", Method: http.MethodGet, Path: "/public", Public: true}, handler))
@@ -56,7 +53,6 @@ func TestRegister_RejectsPermissionAndPublicTogether(t *testing.T) {
 	require.ErrorContains(t, err, "both")
 }
 
-// C59
 func TestRegister_RejectsMissingID(t *testing.T) {
 	err := op.Register(newAPI(t), op.Spec{Method: http.MethodGet, Path: "/things/{id}", Public: true}, handler)
 	require.Error(t, err)

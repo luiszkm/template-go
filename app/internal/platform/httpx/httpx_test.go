@@ -19,7 +19,6 @@ import (
 
 type logBuf struct{ bytes.Buffer }
 
-// intField returns m[key] as an int, failing unless the JSON value is an integer.
 func intField(t *testing.T, m map[string]any, key string) int {
 	t.Helper()
 	raw, err := json.Marshal(m[key])
@@ -43,7 +42,6 @@ func (b *logBuf) entries(t *testing.T) []map[string]any {
 	return out
 }
 
-// server mirrors the production chain: Huma API with Problem errors, a /api/ 404 catch-all and a panicking route.
 func server(t *testing.T) (http.Handler, *logBuf) {
 	t.Helper()
 	buf := &logBuf{}
@@ -69,7 +67,6 @@ func do(h http.Handler, method, path string, hdr map[string]string) *httptest.Re
 	return rec
 }
 
-// C11
 func TestProblem_HasRequiredFields(t *testing.T) {
 	h, _ := server(t)
 	cases := map[int]string{404: "/api/nope", 500: "/api/panic", 503: "/api/unavailable"}
@@ -88,7 +85,6 @@ func TestProblem_HasRequiredFields(t *testing.T) {
 	}
 }
 
-// C13
 func TestRecover_500WithoutStack(t *testing.T) {
 	h, _ := server(t)
 	rec := do(h, http.MethodGet, "/api/panic", nil)
@@ -102,7 +98,6 @@ func TestRecover_500WithoutStack(t *testing.T) {
 	require.NotContains(t, rec.Body.String(), "goroutine")
 }
 
-// C14
 func TestRecover_LogsErrorWithRequestID(t *testing.T) {
 	h, buf := server(t)
 	rec := do(h, http.MethodGet, "/api/panic", nil)
@@ -116,14 +111,12 @@ func TestRecover_LogsErrorWithRequestID(t *testing.T) {
 	require.Equal(t, rec.Header().Get(httpx.HeaderRequestID), errs[0]["request_id"])
 }
 
-// C15
 func TestRequestID_EchoesIncoming(t *testing.T) {
 	h, _ := server(t)
 	rec := do(h, http.MethodGet, "/api/nope", map[string]string{httpx.HeaderRequestID: "abc-123"})
 	require.Equal(t, "abc-123", rec.Header().Get(httpx.HeaderRequestID))
 }
 
-// C16
 func TestRequestID_GeneratesUUID(t *testing.T) {
 	h, _ := server(t)
 	a := do(h, http.MethodGet, "/api/nope", nil).Header().Get(httpx.HeaderRequestID)
@@ -135,7 +128,6 @@ func TestRequestID_GeneratesUUID(t *testing.T) {
 	require.NotEqual(t, a, b)
 }
 
-// C17
 func TestAccessLog_HasAllKeys(t *testing.T) {
 	h, buf := server(t)
 	do(h, http.MethodGet, "/api/unavailable", map[string]string{httpx.HeaderRequestID: "r-1"})
@@ -151,7 +143,6 @@ func TestAccessLog_HasAllKeys(t *testing.T) {
 	require.Equal(t, http.StatusServiceUnavailable, intField(t, e, "status"))
 }
 
-// C57
 func TestProblem_InstanceIsRequestPath(t *testing.T) {
 	h, _ := server(t)
 	cases := map[int]string{404: "/api/nope", 500: "/api/panic", 503: "/api/unavailable"}
@@ -165,7 +156,6 @@ func TestProblem_InstanceIsRequestPath(t *testing.T) {
 	}
 }
 
-// C61
 func TestRecover_RepanicsAbortHandler(t *testing.T) {
 	buf := &logBuf{}
 	log := slog.New(slog.NewJSONHandler(buf, nil))

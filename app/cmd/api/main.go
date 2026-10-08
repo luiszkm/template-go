@@ -1,9 +1,3 @@
-// Command api runs the HTTP server and its maintenance subcommands.
-//
-//	api serve        start the HTTP server (never migrates)
-//	api migrate up   apply pending migrations and exit
-//	api openapi      print the OpenAPI document served at /api/openapi.json
-//	api users create-admin --email <e> --name <n>   create an admin; password on stdin
 package main
 
 import (
@@ -24,7 +18,7 @@ import (
 	"time"
 
 	"github.com/caarlos0/env/v11"
-	_ "github.com/jackc/pgx/v5/stdlib" // database/sql driver "pgx" for goose
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 
 	"github.com/luiszkm/template-go/internal/app"

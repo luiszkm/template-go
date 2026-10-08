@@ -23,14 +23,12 @@ func get(path string) *httptest.ResponseRecorder {
 	return rec
 }
 
-// C44
 func TestHandler_FallsBackToIndex(t *testing.T) {
 	rec := get("/users/42")
 	require.Equal(t, http.StatusOK, rec.Code)
 	require.Equal(t, "<html>index</html>", rec.Body.String())
 }
 
-// C45
 func TestHandler_ServesStaticFile(t *testing.T) {
 	rec := get("/assets/app.js")
 	require.Equal(t, http.StatusOK, rec.Code)
@@ -43,7 +41,6 @@ func TestHandler_RootServesIndex(t *testing.T) {
 	require.Equal(t, "<html>index</html>", rec.Body.String())
 }
 
-// C56
 func TestHandler_MissingBuildIs404Problem(t *testing.T) {
 	empty := fstest.MapFS{"assets/app.js": {Data: []byte("console.log('app')")}}
 	rec := httptest.NewRecorder()
@@ -52,7 +49,6 @@ func TestHandler_MissingBuildIs404Problem(t *testing.T) {
 	require.Equal(t, "application/problem+json", rec.Header().Get("Content-Type"))
 }
 
-// C70
 func TestHandler_NonGetIs405Problem(t *testing.T) {
 	rec := httptest.NewRecorder()
 	webui.Handler(site).ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/users", nil))

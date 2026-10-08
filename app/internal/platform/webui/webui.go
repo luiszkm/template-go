@@ -1,4 +1,3 @@
-// Package webui serves the built SPA embedded in the binary, falling back to index.html.
 package webui
 
 import (
@@ -14,7 +13,6 @@ import (
 //go:embed all:dist
 var dist embed.FS
 
-// Dist returns the embedded build output (copied here by `task build`).
 func Dist() fs.FS {
 	sub, err := fs.Sub(dist, "dist")
 	if err != nil {
@@ -23,8 +21,6 @@ func Dist() fs.FS {
 	return sub
 }
 
-// Handler serves files from fsys; any path that is not a file gets index.html with 200.
-// Only GET and HEAD are served; any other method gets a 405 Problem.
 func Handler(fsys fs.FS) http.Handler {
 	files := http.FileServerFS(fsys)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

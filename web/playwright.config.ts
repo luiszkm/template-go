@@ -1,6 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// `task e2e` runs this; webServer builds the binary, starts Postgres, migrates and serves on :8080.
 export default defineConfig({
   testDir: "./e2e",
   timeout: 30_000,

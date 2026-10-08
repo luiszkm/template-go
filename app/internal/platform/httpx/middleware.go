@@ -1,4 +1,3 @@
-// Package httpx holds the fixed HTTP middleware chain and the Problem error shape.
 package httpx
 
 import (
@@ -13,23 +12,19 @@ import (
 	"github.com/google/uuid"
 )
 
-// HeaderRequestID is read from the request and always written to the response.
 const HeaderRequestID = "X-Request-ID"
 
 type ctxKey struct{}
 
-// RequestIDFrom returns the request id stored by RequestID, or "".
 func RequestIDFrom(ctx context.Context) string {
 	id, _ := ctx.Value(ctxKey{}).(string)
 	return id
 }
 
-// Chain wraps h in the fixed order: request id -> access log -> recover.
 func Chain(h http.Handler, log *slog.Logger) http.Handler {
 	return RequestID(AccessLog(Recover(h, log), log))
 }
 
-// RequestID echoes X-Request-ID, generating a UUID when the client sent none.
 func RequestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := r.Header.Get(HeaderRequestID)
@@ -62,7 +57,6 @@ func (s *statusRecorder) Write(b []byte) (int, error) {
 
 func (s *statusRecorder) Unwrap() http.ResponseWriter { return s.ResponseWriter }
 
-// AccessLog writes one log line per request.
 func AccessLog(next http.Handler, log *slog.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -81,7 +75,6 @@ func AccessLog(next http.Handler, log *slog.Logger) http.Handler {
 	})
 }
 
-// Recover turns a panic into a 500 Problem and logs the stack, never sending it to the client.
 func Recover(next http.Handler, log *slog.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
@@ -90,7 +83,7 @@ func Recover(next http.Handler, log *slog.Logger) http.Handler {
 				return
 			}
 			if err, ok := v.(error); ok && errors.Is(err, http.ErrAbortHandler) {
-				panic(v) // let net/http abort the response as intended
+				panic(v)
 			}
 			log.LogAttrs(r.Context(), slog.LevelError, "panic",
 				slog.String("request_id", RequestIDFrom(r.Context())),

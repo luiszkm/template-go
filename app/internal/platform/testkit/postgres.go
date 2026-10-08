@@ -1,4 +1,3 @@
-// Package testkit holds helpers shared by tests. Never import it from production code.
 package testkit
 
 import (
@@ -11,13 +10,11 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// Postgres is a throwaway Postgres 17 container.
 type Postgres struct {
 	URL       string
 	Container *postgres.PostgresContainer
 }
 
-// StartPostgres starts an empty database and terminates it when the test ends. Requires Docker.
 func StartPostgres(t *testing.T) *Postgres {
 	t.Helper()
 	if err := pinDockerHost(); err != nil {

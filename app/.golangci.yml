@@ -30,7 +30,6 @@ linters:
     rules:
       - path: _test\.go
         linters: [gosec]
-      # Developer CLIs: reading and writing paths given by the developer is their job.
       - path: cmd/(agenthooks|fmtcheck|newslice|sqlcrun|webcopy)/
         linters: [gosec]
 formatters:

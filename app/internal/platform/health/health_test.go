@@ -17,7 +17,6 @@ import (
 	"github.com/luiszkm/template-go/internal/platform/testkit"
 )
 
-// untouchable fails the test if the probe reaches the database.
 type untouchable struct{ t *testing.T }
 
 func (u untouchable) QueryRow(context.Context, string, ...any) pgx.Row {
@@ -38,7 +37,6 @@ func get(h http.Handler, path string) *httptest.ResponseRecorder {
 	return rec
 }
 
-// C1
 func TestHealthz_OKWithoutDatabase(t *testing.T) {
 	rec := get(handler(t, untouchable{t}, time.Second), "/healthz")
 	require.Equal(t, http.StatusOK, rec.Code)
@@ -53,7 +51,6 @@ func pool(t *testing.T, url string) *pgxpool.Pool {
 	return p
 }
 
-// C2
 func TestReadyz_ReadyWhenDatabaseAnswers(t *testing.T) {
 	pg := testkit.StartPostgres(t)
 	rec := get(handler(t, pool(t, pg.URL), 2*time.Second), "/readyz")
@@ -61,7 +58,6 @@ func TestReadyz_ReadyWhenDatabaseAnswers(t *testing.T) {
 	require.JSONEq(t, `{"status":"ready"}`, rec.Body.String())
 }
 
-// C3
 func TestReadyz_503WhenDatabaseDown(t *testing.T) {
 	pg := testkit.StartPostgres(t)
 	h := handler(t, pool(t, pg.URL), 2*time.Second)
@@ -79,7 +75,6 @@ func TestReadyz_503WhenDatabaseDown(t *testing.T) {
 	require.Equal(t, http.StatusServiceUnavailable, body.Status)
 }
 
-// C67: a database that never answers is cut off by the timeout, not by the driver.
 func TestReadyz_503WhenDatabaseHangs(t *testing.T) {
 	const timeout = 200 * time.Millisecond
 	h := handler(t, hanging{}, timeout)
@@ -92,7 +87,6 @@ func TestReadyz_503WhenDatabaseHangs(t *testing.T) {
 	require.Less(t, elapsed, 2*time.Second, "503 must arrive once the timeout elapses, not when the hang ends")
 }
 
-// C60
 func TestReadyz_503WhenDatabaseNotConfigured(t *testing.T) {
 	rec := get(handler(t, nil, time.Second), "/readyz")
 	require.Equal(t, http.StatusServiceUnavailable, rec.Code)

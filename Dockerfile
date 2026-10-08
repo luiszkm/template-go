@@ -1,5 +1,3 @@
-# Production image: the SPA embedded in a static Go binary. Migrations run separately:
-#   docker compose run --rm app migrate up
 FROM node:24-alpine AS web
 WORKDIR /src/web
 COPY web/package.json web/package-lock.json ./

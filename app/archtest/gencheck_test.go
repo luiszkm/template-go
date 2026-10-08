@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// copyApp copies the app module (without build output) into a temp dir.
 func copyApp(t *testing.T) string {
 	t.Helper()
 	dst := filepath.Join(t.TempDir(), "app")
@@ -18,7 +17,6 @@ func copyApp(t *testing.T) string {
 	return dst
 }
 
-// copyAppTo copies the app module (without build output) into dst.
 func copyAppTo(t *testing.T, dst string) {
 	t.Helper()
 	src, err := filepath.Abs("..")
@@ -50,7 +48,6 @@ func goIn(t *testing.T, dir string, args ...string) (string, error) {
 	return string(out), err
 }
 
-// C27
 func TestGenCheck_SqlcDriftFails(t *testing.T) {
 	app := copyApp(t)
 	out, err := goIn(t, app, "run", "./cmd/newslice", "--feature", "gencheck_drift", "--name", "get_thing")
@@ -70,7 +67,6 @@ func TestGenCheck_SqlcDriftFails(t *testing.T) {
 	require.Error(t, err, "edited generated code must fail: %s", out)
 }
 
-// C28
 func TestGenCheck_OpenAPIDriftFails(t *testing.T) {
 	app := copyApp(t)
 	spec := filepath.Join(app, "openapi.json")
@@ -82,9 +78,7 @@ func TestGenCheck_OpenAPIDriftFails(t *testing.T) {
 	require.Error(t, err, "edited openapi.json must fail the check: %s", out)
 }
 
-// C65
 func TestTaskfile_GatesFailOnFailingStep(t *testing.T) {
-	// Expand Windows 8.3 short names (LUIS~1.PER): tools resolve paths through the long one.
 	root, err := filepath.EvalSymlinks(t.TempDir())
 	require.NoError(t, err)
 	raw, err := os.ReadFile(filepath.Join("..", "..", "Taskfile.yml"))

@@ -1,5 +1,4 @@
 version: "2"
-# uuid and timestamptz map to the types the handlers use (nullable timestamptz -> *time.Time).
 overrides:
   go:
     overrides:

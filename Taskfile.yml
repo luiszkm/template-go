@@ -1,4 +1,3 @@
-# Single entry point for humans, agents and CI. `task check` is the gate (AD-009).
 version: "3"
 
 vars:
@@ -12,7 +11,6 @@ tasks:
     cmds: [task --list]
     silent: true
 
-  # ---- gate -------------------------------------------------------------------------------
   check:
     desc: Full gate - run before declaring any work done. Stops at the first failing step.
     cmds:
@@ -64,7 +62,6 @@ tasks:
     cmds:
       - go test -count=1 ./...
 
-  # ---- generated code ----------------------------------------------------------------------
   gen:
     desc: Regenerate sqlc code, app/openapi.json and the web API types.
     cmds:
@@ -109,7 +106,6 @@ tasks:
     cmds:
       - npm run gen:check
 
-  # ---- web ---------------------------------------------------------------------------------
   web:install:
     dir: web
     sources: [package.json, package-lock.json]
@@ -131,7 +127,6 @@ tasks:
     cmds:
       - npm test
 
-  # ---- scaffolding -------------------------------------------------------------------------
   new:slice:
     desc: "Create a slice: task new:slice FEATURE=users NAME=create_user"
     requires:
@@ -141,7 +136,6 @@ tasks:
       - go run ./cmd/newslice --feature "{{.FEATURE}}" --name "{{.NAME}}"
       - task: gen
 
-  # ---- run ---------------------------------------------------------------------------------
   db:up:
     desc: Start Postgres in Docker and wait until it is healthy.
     cmds:

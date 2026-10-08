@@ -1,9 +1,3 @@
-// Command agenthooks implements the Claude Code hooks wired in .claude/settings.json.
-//
-//	agenthooks gofmt   PostToolUse: gofmt the edited file when it is a .go file
-//	agenthooks stop    Stop: run `task check:fast`; on failure exit 2 so Claude sees stderr
-//
-// Both read the hook's JSON payload from stdin.
 package main
 
 import (
@@ -37,8 +31,6 @@ func main() {
 	os.Exit(code)
 }
 
-// gofmtHook formats the file named in tool_input.file_path. It never blocks the agent:
-// a file that does not parse is left alone and reported on stderr.
 func gofmtHook(stdin io.Reader, stderr io.Writer) int {
 	var payload struct {
 		ToolInput struct {
@@ -71,8 +63,6 @@ func gofmtHook(stdin io.Reader, stderr io.Writer) int {
 	return 0
 }
 
-// stopHook runs cmd unless Claude is already continuing because of this hook
-// (stop_hook_active), which would otherwise loop forever on a red check.
 func stopHook(stdin io.Reader, stderr io.Writer, cmd []string) int {
 	var payload struct {
 		StopHookActive bool `json:"stop_hook_active"`

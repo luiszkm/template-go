@@ -38,14 +38,12 @@ func get(h http.Handler, path string) *httptest.ResponseRecorder {
 	return rec
 }
 
-// C12
 func TestRouting_UnknownAPIPathIs404Problem(t *testing.T) {
 	rec := get(newServer(t), "/api/does-not-exist")
 	require.Equal(t, http.StatusNotFound, rec.Code)
 	require.Equal(t, "application/problem+json", rec.Header().Get("Content-Type"))
 }
 
-// C46
 func TestRouting_APIAndHealthNotSwallowedBySPA(t *testing.T) {
 	h := newServer(t)
 	for _, p := range []string{"/api/x", "/healthz", "/readyz"} {
@@ -55,7 +53,6 @@ func TestRouting_APIAndHealthNotSwallowedBySPA(t *testing.T) {
 	require.Equal(t, "<html>spa</html>", get(h, "/some/page").Body.String())
 }
 
-// C18
 func TestOpenAPI_ServedMatchesCommitted(t *testing.T) {
 	rec := get(newServer(t), "/api/openapi.json")
 	require.Equal(t, http.StatusOK, rec.Code)
@@ -69,7 +66,6 @@ func TestOpenAPI_ServedMatchesCommitted(t *testing.T) {
 	require.True(t, strings.HasPrefix(doc.OpenAPI, "3.1"), doc.OpenAPI)
 }
 
-// C22
 func TestNew_FailsOnInvalidOperation(t *testing.T) {
 	type empty struct{}
 	_, err := app.New(app.Options{Logger: testkit.DiscardLogger(), Web: site,
@@ -81,8 +77,6 @@ func TestNew_FailsOnInvalidOperation(t *testing.T) {
 	require.Contains(t, err.Error(), "no-permission-op")
 }
 
-// httpGet is http.Get bound to the test's context. It reports errors instead of failing,
-// because callers run it outside the test goroutine.
 func httpGet(t *testing.T, url string) (*http.Response, error) {
 	t.Helper()
 	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, url, nil)
@@ -100,7 +94,6 @@ func listen(t *testing.T) net.Listener {
 	return ln
 }
 
-// C5
 func TestRun_ShutdownDrainsInFlight(t *testing.T) {
 	entered, release := make(chan struct{}), make(chan struct{})
 	srv := &http.Server{Handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -147,7 +140,6 @@ func TestRun_ShutdownDrainsInFlight(t *testing.T) {
 	}
 }
 
-// C6
 func TestRun_ShutdownTimeoutBoundsDrain(t *testing.T) {
 	entered := make(chan struct{})
 	block := make(chan struct{})
@@ -178,14 +170,12 @@ func TestRun_ShutdownTimeoutBoundsDrain(t *testing.T) {
 	}
 }
 
-// C58
 func TestRouting_DocsServed(t *testing.T) {
 	rec := get(newServer(t), "/api/docs")
 	require.Equal(t, http.StatusOK, rec.Code)
 	require.Contains(t, rec.Header().Get("Content-Type"), "text/html")
 }
 
-// C68
 func TestRouting_NonGetOutsideAPIIs405Problem(t *testing.T) {
 	h := newServer(t)
 	for _, p := range []string{"/healthz", "/users"} {
@@ -195,7 +185,6 @@ func TestRouting_NonGetOutsideAPIIs405Problem(t *testing.T) {
 		require.Equal(t, "application/problem+json", rec.Header().Get("Content-Type"), p)
 		require.NotContains(t, rec.Body.String(), "<html>spa</html>", p)
 	}
-	// SPA paths keep answering GET and HEAD.
 	require.Equal(t, "<html>spa</html>", get(h, "/users").Body.String())
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodHead, "/users", nil))

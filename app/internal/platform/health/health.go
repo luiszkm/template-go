@@ -1,4 +1,3 @@
-// Package health exposes liveness (/healthz) and readiness (/readyz).
 package health
 
 import (
@@ -12,19 +11,16 @@ import (
 	"github.com/luiszkm/template-go/internal/platform/op"
 )
 
-// DB is satisfied by *pgxpool.Pool.
 type DB interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
 
-// Status is the body of both probes.
 type Status struct {
 	Status string `json:"status" enum:"ok,ready"`
 }
 
 type statusOutput struct{ Body Status }
 
-// Register adds both probes. db may be nil, in which case /readyz always answers 503.
 func Register(api huma.API, db DB, timeout time.Duration) error {
 	if err := op.Register(api, op.Spec{
 		ID: "healthz", Method: http.MethodGet, Path: "/healthz", Tags: []string{"health"},
@@ -50,7 +46,6 @@ func Register(api huma.API, db DB, timeout time.Duration) error {
 	})
 }
 
-// ping runs the probe query and gives up when ctx expires even if the driver does not.
 func ping(ctx context.Context, db DB) error {
 	done := make(chan error, 1)
 	go func() {

@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/api/client";
 
-/** Readiness of the backend, read from GET /readyz. Any non-200 or network failure is an error. */
 export function useApiStatus() {
   return useQuery({
     queryKey: ["readyz"],

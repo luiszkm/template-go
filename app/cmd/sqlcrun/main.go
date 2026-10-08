@@ -1,5 +1,3 @@
-// Command sqlcrun runs `sqlc <args>` from the tools module, and succeeds without running it
-// when sqlc.yaml lists no packages yet (sqlc itself fails on an empty `sql:` list).
 package main
 
 import (

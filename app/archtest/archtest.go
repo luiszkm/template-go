@@ -1,4 +1,3 @@
-// Package archtest turns the architecture rules in AGENTS.md into failing tests.
 package archtest
 
 import (
@@ -11,10 +10,6 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-// CheckImports loads every package (tests included) of the module in dir and returns one
-// line per forbidden import:
-//   - internal/features/<a>/... must not import internal/features/<b>/... (a != b)
-//   - internal/platform/... must not import internal/features/...
 func CheckImports(dir string) ([]string, error) {
 	pkgs, err := packages.Load(&packages.Config{
 		Mode:  packages.NeedName | packages.NeedImports | packages.NeedModule,
@@ -70,7 +65,6 @@ func featureOf(prefix, pkg string) string {
 
 var migrationName = regexp.MustCompile(`^\d{14}_[a-z0-9_]+\.sql$`)
 
-// CheckMigrationNames returns one line per .sql file in dir not named YYYYMMDDHHMMSS_<name>.sql.
 func CheckMigrationNames(dir string) ([]string, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {

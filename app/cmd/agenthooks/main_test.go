@@ -24,7 +24,6 @@ func edit(path string) map[string]any {
 	return map[string]any{"hook_event_name": "PostToolUse", "tool_name": "Edit", "tool_input": map[string]any{"file_path": path}}
 }
 
-// C50
 func TestGofmtHook(t *testing.T) {
 	dir := t.TempDir()
 	goFile := filepath.Join(dir, "x.go")
@@ -45,7 +44,6 @@ func TestGofmtHook(t *testing.T) {
 	require.Equal(t, tsSrc, string(got))
 }
 
-// helperCmd re-executes this test binary as a command that exits with the given code.
 func helperCmd(code string) []string {
 	return []string{os.Args[0], "-test.run=^TestHelperProcess$", "--", code}
 }
@@ -62,7 +60,6 @@ func TestHelperProcess(t *testing.T) {
 	os.Exit(0)
 }
 
-// C51
 func TestStopHook(t *testing.T) {
 	t.Setenv("AGENTHOOKS_HELPER", "1")
 
@@ -79,13 +76,11 @@ func TestStopHook(t *testing.T) {
 
 	t.Run("stop_hook_active skips the command", func(t *testing.T) {
 		var stderr bytes.Buffer
-		// The command fails if it runs, so exit 0 with no output proves it was skipped.
 		require.Equal(t, 0, stopHook(payload(t, map[string]any{"stop_hook_active": true}), &stderr, helperCmd("fail")))
 		require.Empty(t, stderr.String())
 	})
 }
 
-// C64
 func TestGofmtHook_NeverBlocks(t *testing.T) {
 	t.Run("malformed JSON payload", func(t *testing.T) {
 		var stderr bytes.Buffer
@@ -118,7 +113,6 @@ func TestGofmtHook_NeverBlocks(t *testing.T) {
 	})
 }
 
-// C71
 func TestGofmtHook_WriteFailureNeverBlocks(t *testing.T) {
 	goFile := filepath.Join(t.TempDir(), "x.go")
 	src := []byte("package x\nfunc  F( ) {\nreturn}\n")
@@ -134,7 +128,6 @@ func TestGofmtHook_WriteFailureNeverBlocks(t *testing.T) {
 	require.Equal(t, src, got)
 }
 
-// C72
 func TestMain_DispatchFailuresExit1(t *testing.T) {
 	bin := buildAgenthooks(t)
 
@@ -159,7 +152,6 @@ func buildAgenthooks(t *testing.T) string {
 	return bin
 }
 
-// C74
 func TestMain_GofmtArmFormats(t *testing.T) {
 	bin := buildAgenthooks(t)
 	goFile := filepath.Join(t.TempDir(), "x.go")
@@ -175,7 +167,6 @@ func TestMain_GofmtArmFormats(t *testing.T) {
 	require.Equal(t, "package x\n\nfunc F() {\n\treturn\n}\n", string(got))
 }
 
-// C75
 func TestMain_StopArmRunsTaskCheckFast(t *testing.T) {
 	bin := buildAgenthooks(t)
 	stubDir := t.TempDir()

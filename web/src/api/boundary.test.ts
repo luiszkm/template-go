@@ -12,7 +12,6 @@ function files(dir: string): string[] {
 }
 
 describe("backend access", () => {
-  // C47
   it("only generated client calls the backend", () => {
     const offenders = files(SRC)
       .filter((f) => /\.(ts|tsx)$/.test(f) && !/\.test\.tsx?$/.test(f))
