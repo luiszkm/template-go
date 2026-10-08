@@ -46,9 +46,12 @@ Commands (all from the repository root):
 | `task gen` | regenerate sqlc code, `app/openapi.json` and `web/src/api/schema.d.ts` |
 | `task check` | the gate: format, lint, generated-code drift, archtest, Go tests, web typecheck/lint/tests |
 | `task e2e` | Playwright against the built binary |
+| `echo <password> \| api users create-admin --email <e> --name <n>` | create an admin (role `admin`, permission `*`); run from `app/` as `go run ./cmd/api users create-admin ...` after `task dev` |
 
-A slice declares its own permission in `endpoint.go` (`const permission op.Permission = "<feature>:<action>"`);
-there is no central permission list.
+Every operation declares exactly one access marker in its `op.Spec`: `Permission` (a slice constant
+`const permission op.Permission = "<feature>:<action>"`; there is no central permission list), `Authenticated: true`
+(any signed-in user) or `Public: true`. `platform/auth` answers `401` without a valid session and `403` without the
+permission. A mutation writes its audit event with `audit.Record(ctx, tx, ...)` inside the same `db.WithTx`.
 
 - Start a new use case with `task new:slice FEATURE=<feature> NAME=<slice>`.
 - Before declaring work done: `task check` must pass. Never weaken, skip or delete a test to make it pass.

@@ -1,11 +1,13 @@
-// Package op is the only way to register an HTTP operation. It refuses an operation that
-// declares neither a permission nor the public marker, and a mutation without an audit action.
+// Package op is the only way to register an HTTP operation. It refuses an operation that does not
+// declare exactly one access marker (permission, public or authenticated), and a mutation without
+// an audit action.
 package op
 
 import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
 
 	"github.com/danielgtaylor/huma/v2"
 )
@@ -21,10 +23,12 @@ type Spec struct {
 	Summary       string
 	Tags          []string
 	DefaultStatus int
+	Errors        []int
 
-	// Exactly one of Permission or Public must be set.
-	Permission Permission
-	Public     bool
+	// Exactly one of Permission, Public or Authenticated must be set.
+	Permission    Permission
+	Public        bool
+	Authenticated bool
 
 	// Required for POST, PUT, PATCH and DELETE: the action recorded in the audit log, e.g. "user.created".
 	AuditAction string
@@ -32,19 +36,28 @@ type Spec struct {
 
 // Metadata keys on huma.Operation, read by the rbac and audit middleware.
 const (
-	MetaPermission  = "permission"
-	MetaPublic      = "public"
-	MetaAuditAction = "audit_action"
+	MetaPermission    = "permission"
+	MetaPublic        = "public"
+	MetaAuthenticated = "authenticated"
+	MetaAuditAction   = "audit_action"
 )
 
 func (s Spec) validate() error {
-	switch {
-	case s.ID == "":
+	if s.ID == "" {
 		return fmt.Errorf("op: operation %s %s has no ID", s.Method, s.Path)
-	case s.Permission == "" && !s.Public:
-		return fmt.Errorf("op: operation %q declares no permission and is not marked Public", s.ID)
-	case s.Permission != "" && s.Public:
-		return fmt.Errorf("op: operation %q declares a permission and is marked Public; choose one", s.ID)
+	}
+	markers := 0
+	for _, set := range []bool{s.Permission != "", s.Public, s.Authenticated} {
+		if set {
+			markers++
+		}
+	}
+	switch markers {
+	case 0:
+		return fmt.Errorf("op: operation %q declares no permission and is not marked Public or Authenticated", s.ID)
+	case 1:
+	default:
+		return fmt.Errorf("op: operation %q declares more than one of Permission, Public and Authenticated; choose one", s.ID)
 	}
 	switch s.Method {
 	case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
@@ -67,11 +80,41 @@ func Register[I, O any](api huma.API, s Spec, h func(context.Context, *I) (*O, e
 		Summary:       s.Summary,
 		Tags:          s.Tags,
 		DefaultStatus: s.DefaultStatus,
+		Errors:        s.documentedErrors(),
 		Metadata: map[string]any{
-			MetaPermission:  s.Permission,
-			MetaPublic:      s.Public,
-			MetaAuditAction: s.AuditAction,
+			MetaPermission:    s.Permission,
+			MetaPublic:        s.Public,
+			MetaAuthenticated: s.Authenticated,
+			MetaAuditAction:   s.AuditAction,
 		},
 	}, h)
 	return nil
+}
+
+func Permissions(api huma.API) []Permission {
+	var out []Permission
+	for _, item := range api.OpenAPI().Paths {
+		for _, o := range []*huma.Operation{item.Get, item.Put, item.Post, item.Delete, item.Options, item.Head, item.Patch, item.Trace} {
+			if o == nil {
+				continue
+			}
+			if p, ok := o.Metadata[MetaPermission].(Permission); ok && p != "" {
+				out = append(out, p)
+			}
+		}
+	}
+	slices.Sort(out)
+	return slices.Compact(out)
+}
+
+func (s Spec) documentedErrors() []int {
+	errs := slices.Clone(s.Errors)
+	if !s.Public {
+		errs = append(errs, http.StatusUnauthorized)
+	}
+	if s.Permission != "" {
+		errs = append(errs, http.StatusForbidden)
+	}
+	slices.Sort(errs)
+	return slices.Compact(errs)
 }

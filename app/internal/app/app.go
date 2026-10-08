@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/netip"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -18,6 +19,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/luiszkm/template-go/internal/features"
+	"github.com/luiszkm/template-go/internal/platform/auth"
 	"github.com/luiszkm/template-go/internal/platform/deps"
 	"github.com/luiszkm/template-go/internal/platform/health"
 	"github.com/luiszkm/template-go/internal/platform/httpx"
@@ -31,6 +33,10 @@ type Options struct {
 	ReadyTimeout time.Duration
 	Web          fs.FS                           // nil: the embedded SPA build
 	Register     func(huma.API, deps.Deps) error // nil: features.Register
+
+	SessionTTL     time.Duration
+	CookieSecure   bool
+	TrustedProxies []netip.Prefix
 }
 
 // New assembles the whole HTTP server. It fails if any operation violates the op contract.
@@ -47,25 +53,32 @@ func New(o Options) (http.Handler, error) {
 	if o.Register == nil {
 		o.Register = features.Register
 	}
+	if o.SessionTTL == 0 {
+		o.SessionTTL = 12 * time.Hour
+	}
 
 	mux := http.NewServeMux()
 	api := httpx.NewAPI(mux)
 
 	var db health.DB
+	var sessions auth.Querier
 	if o.DB != nil {
 		db = o.DB
+		sessions = o.DB
 	}
+	auth.Install(api, sessions, o.SessionTTL)
 	if err := health.Register(api, db, o.ReadyTimeout); err != nil {
 		return nil, err
 	}
-	if err := o.Register(api, deps.Deps{DB: o.DB}); err != nil {
+	d := deps.Deps{DB: o.DB, Logger: o.Logger, SessionTTL: o.SessionTTL, CookieSecure: o.CookieSecure}
+	if err := o.Register(api, d); err != nil {
 		return nil, fmt.Errorf("app: register features: %w", err)
 	}
 
 	mux.Handle("/api/", httpx.NotFound())
 	mux.Handle("/", webui.Handler(o.Web))
 	// Spans go to the global OpenTelemetry provider (no-op until one is installed).
-	return otelhttp.NewHandler(httpx.Chain(mux, o.Logger), "http"), nil
+	return otelhttp.NewHandler(httpx.WithClientIP(httpx.Chain(mux, o.Logger), o.TrustedProxies), "http"), nil
 }
 
 // OpenAPI returns the contract exactly as GET /api/openapi.json serves it.

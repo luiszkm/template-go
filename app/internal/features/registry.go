@@ -6,6 +6,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 
+	"github.com/luiszkm/template-go/internal/features/users"
 	"github.com/luiszkm/template-go/internal/platform/deps"
 	// features:imports
 )
@@ -13,6 +14,7 @@ import (
 // Register registers every feature's operations.
 func Register(api huma.API, d deps.Deps) error {
 	return errors.Join(
+		users.Register(api, d),
 	// features:register
 	)
 }

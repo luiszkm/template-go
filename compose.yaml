@@ -20,6 +20,7 @@ services:
     profiles: [app]
     environment:
       DATABASE_URL: postgres://app:app@db:5432/app?sslmode=disable
+      COOKIE_SECURE: "false"
     ports:
       - "8080:8080"
     depends_on:

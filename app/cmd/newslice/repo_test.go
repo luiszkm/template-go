@@ -161,3 +161,18 @@ func TestGenerated_SliceAnswers501(t *testing.T) {
 	require.NoError(t, err, out)
 	require.Contains(t, out, "--- PASS: TestEndpoint_NotImplemented")
 }
+
+func TestGeneratedSlice_RequiresSession(t *testing.T) {
+	root := generatedRepo(t)
+	app := filepath.Join(root, "app")
+
+	test, err := os.ReadFile(filepath.Join(app, "internal", "features", "demo", "get_thing", "get_thing_test.go"))
+	require.NoError(t, err)
+	require.Contains(t, string(test), "http.StatusUnauthorized")
+	require.Contains(t, string(test), `testkit.SignIn(t, pool, "demo:get_thing")`)
+	require.Contains(t, string(test), "http.StatusNotImplemented")
+
+	out, err := runIn(app, nil, "go", "test", "-count=1", "-v", "-run", "^TestEndpoint_NotImplemented$", "./internal/features/demo/get_thing")
+	require.NoError(t, err, out)
+	require.Contains(t, out, "--- PASS: TestEndpoint_NotImplemented")
+}

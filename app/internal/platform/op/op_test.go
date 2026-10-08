@@ -63,3 +63,43 @@ func TestRegister_RejectsMissingID(t *testing.T) {
 	require.Contains(t, err.Error(), http.MethodGet)
 	require.Contains(t, err.Error(), "/things/{id}")
 }
+
+func TestRegister_ExactlyOneAccessMarker(t *testing.T) {
+	cases := []struct {
+		name          string
+		permission    op.Permission
+		public, authn bool
+		ok            bool
+	}{
+		{"permission only", "x:read", false, false, true},
+		{"public only", "", true, false, true},
+		{"authenticated only", "", false, true, true},
+		{"none", "", false, false, false},
+		{"permission and public", "x:read", true, false, false},
+		{"permission and authenticated", "x:read", false, true, false},
+		{"public and authenticated", "", true, true, false},
+		{"all three", "x:read", true, true, false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			id := "op-" + c.name
+			err := op.Register(newAPI(t), op.Spec{ID: id, Method: http.MethodGet, Path: "/x",
+				Permission: c.permission, Public: c.public, Authenticated: c.authn}, handler)
+			if c.ok {
+				require.NoError(t, err)
+				return
+			}
+			require.Error(t, err)
+			require.Contains(t, err.Error(), id)
+		})
+	}
+}
+
+func TestPermissions_ListsRegisteredSortedUnique(t *testing.T) {
+	api := newAPI(t)
+	require.NoError(t, op.Register(api, op.Spec{ID: "b", Method: http.MethodGet, Path: "/b", Permission: "b:read"}, handler))
+	require.NoError(t, op.Register(api, op.Spec{ID: "a", Method: http.MethodGet, Path: "/a", Permission: "a:read"}, handler))
+	require.NoError(t, op.Register(api, op.Spec{ID: "a2", Method: http.MethodGet, Path: "/a2", Permission: "a:read"}, handler))
+	require.NoError(t, op.Register(api, op.Spec{ID: "p", Method: http.MethodGet, Path: "/p", Public: true}, handler))
+	require.Equal(t, []op.Permission{"a:read", "b:read"}, op.Permissions(api))
+}

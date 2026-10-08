@@ -3,12 +3,15 @@
 //	api serve        start the HTTP server (never migrates)
 //	api migrate up   apply pending migrations and exit
 //	api openapi      print the OpenAPI document served at /api/openapi.json
+//	api users create-admin --email <e> --name <n>   create an admin; password on stdin
 package main
 
 import (
+	"bufio"
 	"context"
 	"database/sql"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"log/slog"
@@ -30,18 +33,23 @@ import (
 	"github.com/luiszkm/template-go/migrations"
 )
 
-const usage = "usage: api serve | api migrate up | api openapi"
+const usage = "usage: api serve | api migrate up | api openapi | api users create-admin --email <e> --name <n> < password"
+
+const createAdminUsage = "usage: api users create-admin --email <e> --name <n> (password on stdin, 12-128 characters)"
 
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	os.Exit(run(ctx, os.Args[1:], env.ToMap(os.Environ()), os.Stdout, os.Stderr))
+	os.Exit(run(ctx, os.Args[1:], env.ToMap(os.Environ()), os.Stdin, os.Stdout, os.Stderr))
 }
 
-func run(ctx context.Context, args []string, environ map[string]string, stdout, stderr io.Writer) int {
+func run(ctx context.Context, args []string, environ map[string]string, stdin io.Reader, stdout, stderr io.Writer) int {
 	cmd := strings.Join(args, " ")
 	if cmd == "openapi" {
 		return exportOpenAPI(stdout, stderr)
+	}
+	if len(args) >= 2 && args[0] == "users" && args[1] == "create-admin" {
+		return createAdmin(ctx, args[2:], environ, stdin, stdout, stderr)
 	}
 	if cmd != "serve" && cmd != "migrate up" {
 		fmt.Fprintln(stderr, usage)
@@ -83,7 +91,8 @@ func serve(ctx context.Context, cfg config.Config, log *slog.Logger) error {
 	}
 	defer pool.Close()
 
-	h, err := app.New(app.Options{Logger: log, DB: pool, ReadyTimeout: cfg.ReadyTimeout})
+	h, err := app.New(app.Options{Logger: log, DB: pool, ReadyTimeout: cfg.ReadyTimeout,
+		SessionTTL: cfg.SessionTTL, CookieSecure: cfg.CookieSecure, TrustedProxies: cfg.TrustedProxies})
 	if err != nil {
 		return err
 	}
@@ -123,5 +132,45 @@ func exportOpenAPI(stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, errors.Join(errors.New("openapi"), err))
 		return 1
 	}
+	return 0
+}
+
+func createAdmin(ctx context.Context, args []string, environ map[string]string, stdin io.Reader, stdout, stderr io.Writer) int {
+	flags := flag.NewFlagSet("create-admin", flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	email := flags.String("email", "", "")
+	name := flags.String("name", "", "")
+	if err := flags.Parse(args); err != nil || *email == "" || *name == "" {
+		fmt.Fprintln(stderr, createAdminUsage)
+		return 2
+	}
+	password, err := bufio.NewReader(stdin).ReadString('\n')
+	if err != nil && !errors.Is(err, io.EOF) {
+		fmt.Fprintln(stderr, createAdminUsage)
+		return 2
+	}
+	password = strings.TrimRight(password, "\r\n")
+	if err := app.ValidateAdmin(*email, *name, password); err != nil {
+		fmt.Fprintf(stderr, "%s\n%v\n", createAdminUsage, err)
+		return 2
+	}
+
+	cfg, err := config.Load(environ)
+	if err != nil {
+		fmt.Fprintf(stderr, "config: %v\n", err)
+		return 1
+	}
+	pool, err := db.Open(ctx, cfg.DatabaseURL)
+	if err != nil {
+		fmt.Fprintf(stderr, "create-admin: %v\n", err)
+		return 1
+	}
+	defer pool.Close()
+	id, err := app.CreateAdmin(ctx, pool, *email, *name, password)
+	if err != nil {
+		fmt.Fprintf(stderr, "create-admin: %v\n", err)
+		return 1
+	}
+	fmt.Fprintln(stdout, id)
 	return 0
 }

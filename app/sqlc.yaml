@@ -1,2 +1,103 @@
 version: "2"
-sql: []
+# uuid and timestamptz map to the types the handlers use (nullable timestamptz -> *time.Time).
+overrides:
+  go:
+    overrides:
+      - db_type: uuid
+        go_type: github.com/google/uuid.UUID
+      - db_type: timestamptz
+        go_type: time.Time
+      - db_type: timestamptz
+        nullable: true
+        go_type:
+          type: time.Time
+          pointer: true
+sql:
+  - engine: postgresql
+    schema: migrations
+    queries: internal/features/users/login/queries.sql
+    gen:
+      go:
+        package: db
+        out: internal/features/users/login/db
+        sql_package: pgx/v5
+  - engine: postgresql
+    schema: migrations
+    queries: internal/features/users/logout/queries.sql
+    gen:
+      go:
+        package: db
+        out: internal/features/users/logout/db
+        sql_package: pgx/v5
+  - engine: postgresql
+    schema: migrations
+    queries: internal/features/users/me/queries.sql
+    gen:
+      go:
+        package: db
+        out: internal/features/users/me/db
+        sql_package: pgx/v5
+  - engine: postgresql
+    schema: migrations
+    queries: internal/features/users/change_password/queries.sql
+    gen:
+      go:
+        package: db
+        out: internal/features/users/change_password/db
+        sql_package: pgx/v5
+  - engine: postgresql
+    schema: migrations
+    queries: internal/features/users/create_user/queries.sql
+    gen:
+      go:
+        package: db
+        out: internal/features/users/create_user/db
+        sql_package: pgx/v5
+  - engine: postgresql
+    schema: migrations
+    queries: internal/features/users/list_users/queries.sql
+    gen:
+      go:
+        package: db
+        out: internal/features/users/list_users/db
+        sql_package: pgx/v5
+  - engine: postgresql
+    schema: migrations
+    queries: internal/features/users/get_user/queries.sql
+    gen:
+      go:
+        package: db
+        out: internal/features/users/get_user/db
+        sql_package: pgx/v5
+  - engine: postgresql
+    schema: migrations
+    queries: internal/features/users/update_user/queries.sql
+    gen:
+      go:
+        package: db
+        out: internal/features/users/update_user/db
+        sql_package: pgx/v5
+  - engine: postgresql
+    schema: migrations
+    queries: internal/features/users/deactivate_user/queries.sql
+    gen:
+      go:
+        package: db
+        out: internal/features/users/deactivate_user/db
+        sql_package: pgx/v5
+  - engine: postgresql
+    schema: migrations
+    queries: internal/features/users/activate_user/queries.sql
+    gen:
+      go:
+        package: db
+        out: internal/features/users/activate_user/db
+        sql_package: pgx/v5
+  - engine: postgresql
+    schema: migrations
+    queries: internal/features/users/bootstrap/queries.sql
+    gen:
+      go:
+        package: db
+        out: internal/features/users/bootstrap/db
+        sql_package: pgx/v5

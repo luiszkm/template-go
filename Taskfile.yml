@@ -59,6 +59,8 @@ tasks:
   test:
     desc: Every Go test. Postgres tests need Docker.
     dir: app
+    env:
+      GOFLAGS: -p=4
     cmds:
       - go test -count=1 ./...
 
@@ -185,6 +187,8 @@ tasks:
 
   dev:api:
     dir: app
+    env:
+      COOKIE_SECURE: "false"
     cmds:
       - go run ./cmd/api serve
 
@@ -209,5 +213,7 @@ tasks:
 
   serve:bin:
     dir: app
+    env:
+      COOKIE_SECURE: "false"
     cmds:
       - ./bin/api{{exeExt}} serve

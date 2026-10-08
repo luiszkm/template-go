@@ -77,7 +77,7 @@ func gooseVersion(t *testing.T, url string) int64 {
 func runCmd(t *testing.T, url string, args ...string) (int, string) {
 	t.Helper()
 	var out, errb bytes.Buffer
-	code := run(context.Background(), args, map[string]string{"DATABASE_URL": url}, &out, &errb)
+	code := run(context.Background(), args, map[string]string{"DATABASE_URL": url}, strings.NewReader(""), &out, &errb)
 	return code, errb.String()
 }
 
@@ -118,7 +118,7 @@ func TestServe_DoesNotMigrate(t *testing.T) {
 	addr := freeAddr(t)
 	go func() {
 		var out, errb bytes.Buffer
-		done <- run(ctx, []string{"serve"}, map[string]string{"DATABASE_URL": pg.URL, "HTTP_ADDR": addr}, &out, &errb)
+		done <- run(ctx, []string{"serve"}, map[string]string{"DATABASE_URL": pg.URL, "HTTP_ADDR": addr}, nil, &out, &errb)
 	}()
 	waitServing(t, "http://"+addr+"/healthz", done)
 	cancel()
@@ -171,7 +171,7 @@ func waitServing(t *testing.T, url string, done <-chan int) {
 // C62
 func TestRun_UnknownCommandExits2(t *testing.T) {
 	var out, errb bytes.Buffer
-	code := run(context.Background(), []string{"frobnicate"}, map[string]string{}, &out, &errb)
+	code := run(context.Background(), []string{"frobnicate"}, map[string]string{}, nil, &out, &errb)
 	require.Equal(t, 2, code)
 	require.Contains(t, errb.String(), "usage: api serve | api migrate up | api openapi")
 }
@@ -190,7 +190,7 @@ func (failingWriter) Write([]byte) (int, error) { return 0, errors.New("disk ful
 // C69
 func TestOpenAPI_WriteFailureExits1(t *testing.T) {
 	var errb bytes.Buffer
-	code := run(context.Background(), []string{"openapi"}, map[string]string{}, failingWriter{}, &errb)
+	code := run(context.Background(), []string{"openapi"}, map[string]string{}, nil, failingWriter{}, &errb)
 	require.Equal(t, 1, code)
 	require.Contains(t, errb.String(), "openapi")
 }
