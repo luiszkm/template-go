@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"errors"
 	"io/fs"
 	"net"
 	"net/http"
@@ -180,4 +181,16 @@ func TestMigrateUp_UnreachableDatabaseExits1(t *testing.T) {
 	code, stderr := runCmd(t, "postgres://app:app@127.0.0.1:1/app?sslmode=disable&connect_timeout=5", "migrate", "up")
 	require.Equal(t, 1, code, stderr)
 	require.Contains(t, stderr, "migrate up:")
+}
+
+type failingWriter struct{}
+
+func (failingWriter) Write([]byte) (int, error) { return 0, errors.New("disk full") }
+
+// C69
+func TestOpenAPI_WriteFailureExits1(t *testing.T) {
+	var errb bytes.Buffer
+	code := run(context.Background(), []string{"openapi"}, map[string]string{}, failingWriter{}, &errb)
+	require.Equal(t, 1, code)
+	require.Contains(t, errb.String(), "openapi")
 }

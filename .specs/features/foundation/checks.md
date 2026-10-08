@@ -5,7 +5,7 @@ Plan: `.specs/features/foundation/plan.md`
 
 ## Intent
 
-68 checks in 7 slices · 11 one-way doors · 0 open
+73 checks in 8 slices · 11 one-way doors · 0 open
 
 Repositório greenfield: nenhum comando existe ainda. Todo `Proof:` abaixo usa comandos que esta feature cria
 (`go -C app test`, `npm --prefix web run test`, `task ...`); o build cria o comando antes de rodar a prova.
@@ -237,6 +237,23 @@ Proof: `go -C app test ./internal/platform/health -run '^TestReadyz_503WhenDatab
 **C68** - A `POST` to a path outside `/api/` (e.g. `/healthz`, `/users`) gets `405` with an `application/problem+json` body, never the SPA (FND-02, AC 8, door 9) `[done]`
 Proof: `go -C app test ./internal/app -run '^TestRouting_NonGetOutsideAPIIs405Problem$'`
 
+### S8 - Correções da verificação rodada 2 (aprovadas pelo usuário em 2026-10-08) · ~6 files · ~15 KB · ~4k
+
+**C69** - `api openapi` with a stdout that rejects every write exits `1` and writes a line containing `openapi` to stderr (FND-01, AC 4) `[done]`
+Proof: `go -C app test ./cmd/api -run '^TestOpenAPI_WriteFailureExits1$'`
+
+**C70** - At its own layer, the `webui` handler answers `POST /users` with `405`, content type `application/problem+json` and header `Allow: GET, HEAD` (FND-02, AC 8, door 9) `[done]`
+Proof: `go -C app test ./internal/platform/webui -run '^TestHandler_NonGetIs405Problem$'`
+
+**C71** - When the unformatted `.go` file cannot be written (read-only), the gofmt hook exits `0`, writes a message to stderr, and leaves the file bytes unchanged (FND-06, AC 37) `[done]`
+Proof: `go -C app test ./cmd/agenthooks -run '^TestGofmtHook_WriteFailureNeverBlocks$'`
+
+**C72** - The built `agenthooks` binary exits `1` with no argument and with the unknown hook name `nope` (FND-06, AC 37, AC 38) `[done]`
+Proof: `go -C app test ./cmd/agenthooks -run '^TestMain_DispatchFailuresExit1$'`
+
+**C73** - The web test setup sets Testing Library `asyncUtilTimeout` to `5000` ms, so every `findBy*` in the gate (C39 included) waits up to 5 s (FND-03, AC 23; FND-05, AC 30) `[done]`
+Proof: `npm --prefix web run test -- src/test/setup.test.ts -t "async timeout"`
+
 ## Coverage
 
 | Set (size) | Member -> proof | Unproven |
@@ -262,15 +279,16 @@ Proof: `go -C app test ./internal/app -run '^TestRouting_NonGetOutsideAPIIs405Pr
 | generated files (3) | `endpoint.go` C33 · `queries.sql` C33 · `<n>_test.go` C33 | - |
 | invalid generator inputs (4) | C38, table-driven over all 4 | - |
 | screen `/` states (4) | loading C42 · online C39 · offline C40 · retry C41 | - |
-| `webui` routing (5) | SPA fallback C44 · static file C45 · API/health excluded C46 · missing build C56 · non-GET C68 | - |
+| `webui` routing (5) | SPA fallback C44 · static file C45 · API/health excluded C46 · missing build C56 · non-GET C68 (assembled), C70 (own layer) | - |
 | dev proxy prefixes (3) | C48, table-driven over all 3 | - |
 | Stop hook branches (3) | failing C51 · passing C51 · `stop_hook_active` C51 | - |
 | agent rule files (1) | Cursor C53 | - |
 | CI steps (2) | `task check` C54 · `task e2e` C54 | - |
 | `/readyz` branches (4) | ready C2 · DB down C3 · DB hangs C67 · DB not configured C60 | - |
 | Recover branches (2) | panic -> 500 C13 · `ErrAbortHandler` re-panicked C61 | - |
-| `api` command exits (4) | serve config error 1 C4 · migrate ok 0 C7 · migrate runtime error 1 C63 · unknown command 2 C62 | - |
-| gofmt hook branches (5) | formats `.go` C50 · ignores non-`.go` C50 · bad payload C64 · missing file C64 · unparseable `.go` C64 | - |
+| `api` command exits (5) | serve config error 1 C4 · migrate ok 0 C7 · migrate runtime error 1 C63 · unknown command 2 C62 · openapi error 1 C69 | - |
+| gofmt hook branches (6) | formats `.go` C50 · ignores non-`.go` C50 · bad payload C64 · missing file C64 · unparseable `.go` C64 · write failure C71 | - |
+| `agenthooks` dispatch exits (2) | no argument C72 · unknown hook C72 | - |
 | gate failure exit (2) | `task check` C65 · `task check:fast` C65 | - |
 | `newslice` process exits (2) | invalid name C66 · existing slice C66 | - |
 | Landing doors (13) | 1 C31 · 2 C36, C58 · 3 C11 · 4 C15 · 5 C19 · 6 C33 · 7 C23 · 8 C10 · 9 C44 · 10 C32 · 11 C22 · 12 C36 · 13 C31 | - |

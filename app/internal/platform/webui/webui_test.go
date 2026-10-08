@@ -51,3 +51,12 @@ func TestHandler_MissingBuildIs404Problem(t *testing.T) {
 	require.Equal(t, http.StatusNotFound, rec.Code)
 	require.Equal(t, "application/problem+json", rec.Header().Get("Content-Type"))
 }
+
+// C70
+func TestHandler_NonGetIs405Problem(t *testing.T) {
+	rec := httptest.NewRecorder()
+	webui.Handler(site).ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/users", nil))
+	require.Equal(t, http.StatusMethodNotAllowed, rec.Code)
+	require.Equal(t, "application/problem+json", rec.Header().Get("Content-Type"))
+	require.Equal(t, "GET, HEAD", rec.Header().Get("Allow"))
+}

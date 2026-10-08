@@ -1,0 +1,81 @@
+{
+  "schema": 1,
+  "promote_threshold": 2,
+  "window_days": 45,
+  "quarantine_threshold": 2,
+  "next_id": 5,
+  "lessons": [
+    {
+      "id": "L-001",
+      "key": "ac_gap::enumerate every subcommand of a cli entry point when listing its exit codes including the error exit of auxiliary subcommands",
+      "text": "Enumerate every subcommand of a CLI entry point when listing its exit codes, including the error exit of auxiliary subcommands",
+      "signal": "ac_gap",
+      "scope": "cmd",
+      "status": "candidate",
+      "features": [
+        "foundation"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "app/cmd/api/main.go:122-125 (cmd)"
+      ],
+      "created": "2026-10-08T13:23:07Z",
+      "last_seen": "2026-10-08T13:23:07Z"
+    },
+    {
+      "id": "L-002",
+      "key": "ac_gap::when a fix adds a branch to a component tested at its own layer add the own layer case too not only an assembled server case",
+      "text": "When a fix adds a branch to a component tested at its own layer, add the own-layer case too, not only an assembled-server case",
+      "signal": "ac_gap",
+      "scope": "platform",
+      "status": "candidate",
+      "features": [
+        "foundation"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "app/internal/platform/webui/webui.go:31 (platform)"
+      ],
+      "created": "2026-10-08T13:23:07Z",
+      "last_seen": "2026-10-08T13:23:07Z"
+    },
+    {
+      "id": "L-003",
+      "key": "ac_gap::give process dispatch exits missing argument unknown command a proof wherever a binary s main switches on its arguments",
+      "text": "Give process dispatch exits (missing argument, unknown command) a proof wherever a binary's main switches on its arguments",
+      "signal": "ac_gap",
+      "scope": "cmd",
+      "status": "candidate",
+      "features": [
+        "foundation"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "app/cmd/agenthooks/main.go:23-36 (cmd)"
+      ],
+      "created": "2026-10-08T13:23:07Z",
+      "last_seen": "2026-10-08T13:23:07Z"
+    },
+    {
+      "id": "L-004",
+      "key": "spec_precision_gap::do not rely on the default 1s findby timeout in tests that run inside the gate set an explicit timeout so load cannot turn the gate red",
+      "text": "Do not rely on the default 1s findBy timeout in tests that run inside the gate; set an explicit timeout so load cannot turn the gate red",
+      "signal": "spec_precision_gap",
+      "scope": "web",
+      "status": "candidate",
+      "features": [
+        "foundation"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "web/src/features/status/ApiStatus.test.tsx:21 (web)"
+      ],
+      "created": "2026-10-08T13:23:08Z",
+      "last_seen": "2026-10-08T13:23:08Z"
+    }
+  ]
+}

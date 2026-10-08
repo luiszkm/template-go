@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -114,4 +116,40 @@ func TestGofmtHook_NeverBlocks(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, src, got)
 	})
+}
+
+// C71
+func TestGofmtHook_WriteFailureNeverBlocks(t *testing.T) {
+	goFile := filepath.Join(t.TempDir(), "x.go")
+	src := []byte("package x\nfunc  F( ) {\nreturn}\n")
+	require.NoError(t, os.WriteFile(goFile, src, 0o644))
+	require.NoError(t, os.Chmod(goFile, 0o444))
+	t.Cleanup(func() { _ = os.Chmod(goFile, 0o644) })
+
+	var stderr bytes.Buffer
+	require.Equal(t, 0, gofmtHook(payload(t, edit(goFile)), &stderr))
+	require.NotEmpty(t, stderr.String())
+	got, err := os.ReadFile(goFile)
+	require.NoError(t, err)
+	require.Equal(t, src, got)
+}
+
+// C72
+func TestMain_DispatchFailuresExit1(t *testing.T) {
+	bin := filepath.Join(t.TempDir(), "agenthooks")
+	if runtime.GOOS == "windows" {
+		bin += ".exe"
+	}
+	build := exec.CommandContext(t.Context(), "go", "build", "-o", bin, ".")
+	out, err := build.CombinedOutput()
+	require.NoError(t, err, string(out))
+
+	for name, args := range map[string][]string{"no argument": nil, "unknown hook": {"nope"}} {
+		t.Run(name, func(t *testing.T) {
+			err := exec.CommandContext(t.Context(), bin, args...).Run()
+			var exitErr *exec.ExitError
+			require.ErrorAs(t, err, &exitErr)
+			require.Equal(t, 1, exitErr.ExitCode())
+		})
+	}
 }
