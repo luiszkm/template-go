@@ -164,3 +164,20 @@ func TestUpdateRole_404And422(t *testing.T) {
 	require.Equal(t, http.StatusNotFound, f.patch(t, uuid.NewString(), map[string]any{"name": "X"}).Code)
 	require.Equal(t, http.StatusUnprocessableEntity, f.patch(t, "abc", map[string]any{"name": "X"}).Code)
 }
+
+func TestUpdateRole_UpdatesBothFields(t *testing.T) {
+	f := setup(t)
+	id := rbactest.CreateRole(t, f.pool, "Leitor", "users:read")
+
+	rec := f.patch(t, id.String(), map[string]any{"name": "Gestor", "permissions": []string{"users:create", "users:read"}})
+	require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+	got := testkit.JSON[role.Role](t, rec)
+	require.Equal(t, "Gestor", got.Name)
+	require.Equal(t, []string{"users:create", "users:read"}, got.Permissions)
+	require.Equal(t, "Gestor", nameOf(t, f.pool, id))
+	require.Equal(t, []string{"users:create", "users:read"}, permissionsOf(t, f.pool, id))
+	before, after := lastAudit(t, f.pool, id)
+	require.Equal(t, snapshot{"Leitor", []string{"users:read"}}, before)
+	require.Equal(t, snapshot{"Gestor", []string{"users:create", "users:read"}}, after)
+	require.Equal(t, 1, rbactest.Count(t, f.pool, `SELECT count(*) FROM audit_events`))
+}

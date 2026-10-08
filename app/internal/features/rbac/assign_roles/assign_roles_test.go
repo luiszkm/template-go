@@ -7,6 +7,7 @@ import (
 	"slices"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -189,19 +190,30 @@ func TestAssignRoles_LastAdminGuard(t *testing.T) {
 }
 
 func TestAssignRoles_ConcurrentLastAdmin(t *testing.T) {
-	for range 10 {
+	for range 3 {
 		f := setup(t)
 		admin := rbactest.AdminRoleID(t, f.pool)
 		a, b := rbactest.InsertUser(t, f.pool), rbactest.InsertUser(t, f.pool)
 		rbactest.Assign(t, f.pool, a, admin)
 		rbactest.Assign(t, f.pool, b, admin)
 
+		gate, err := f.pool.Begin(t.Context())
+		require.NoError(t, err)
+		_, err = gate.Exec(t.Context(), `LOCK TABLE sessions IN ACCESS EXCLUSIVE MODE`)
+		require.NoError(t, err)
+
 		codes := make([]int, 2)
 		var wg sync.WaitGroup
 		for i, user := range []uuid.UUID{a, b} {
 			wg.Go(func() { codes[i] = f.put(t, user.String()).Code })
 		}
+		require.Eventually(t, func() bool {
+			return rbactest.Count(t, f.pool,
+				`SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND datname = current_database()`) == 2
+		}, 10*time.Second, 20*time.Millisecond, "both requests must be inside their transactions before either commits")
+		require.NoError(t, gate.Commit(t.Context()))
 		wg.Wait()
+
 		slices.Sort(codes)
 		require.Equal(t, []int{http.StatusNoContent, http.StatusConflict}, codes)
 		require.Equal(t, 1, rbactest.Count(t, f.pool,

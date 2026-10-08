@@ -74,4 +74,23 @@ describe("RolesList on /roles", () => {
     renderAt("/roles");
     expect(await screen.findByText(forbidden)).toBeInTheDocument();
   });
+
+  it("new role link only with rbac:create", async () => {
+    stubApi({
+      "GET /api/v1/users/me": meWith("rbac:read", "rbac:create"),
+      "GET /api/v1/rbac/roles": json(200, { items: [admin] }),
+    });
+    renderAt("/roles");
+    expect(await screen.findByRole("link", { name: "Novo papel" })).toBeInTheDocument();
+  });
+
+  it("hides new role link without rbac:create", async () => {
+    stubApi({
+      "GET /api/v1/users/me": meWith("rbac:read"),
+      "GET /api/v1/rbac/roles": json(200, { items: [admin] }),
+    });
+    renderAt("/roles");
+    expect(await screen.findByRole("table")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Novo papel" })).not.toBeInTheDocument();
+  });
 });

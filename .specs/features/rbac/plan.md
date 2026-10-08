@@ -221,6 +221,8 @@ tabela nova. No columns and no types here.
 | `GET /api/v1/rbac/users/{id}/roles` | `id` | `items[]` de `id` · `name` | `200`, `401`, `403`, `404`, `422` |
 | `PUT /api/v1/rbac/users/{id}/roles` | `id`, `role_ids` | nada | `204`, `401`, `403`, `404`, `409`, `422` |
 
+Toda operação também documenta `500` (problem+json de falha interna, foundation door 3); o contrato exato de cada rota é a lista acima mais `500` (decisão do usuário, 2026-10-08, verificação rodada 1).
+
 ## Landing
 
 | One-way door | Literal shape | Alternative rejected |

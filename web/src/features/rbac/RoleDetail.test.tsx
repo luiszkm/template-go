@@ -103,7 +103,9 @@ describe("RoleDetail on /roles/$id", () => {
     await waitFor(() => expect(name).toHaveValue("Leitor"));
     await userEvent.type(name, "2");
     await userEvent.click(screen.getByRole("button", { name: "Salvar" }));
-    expect(await screen.findByText("Já existe um papel com este nome.")).toBeInTheDocument();
+    const conflict = await screen.findByText("Já existe um papel com este nome.");
+    expect(conflict.id).toBe("name-error");
+    expect(screen.getByLabelText("Nome")).toHaveAttribute("aria-describedby", "name-error");
   });
 
   it("shows field errors", async () => {
@@ -172,5 +174,15 @@ describe("RoleDetail on /roles/$id", () => {
       await screen.findByText("Remova este papel dos 2 usuários antes de excluí-lo."),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Excluir" })).toBeDisabled();
+  });
+
+  it("forbidden on API 403", async () => {
+    stubApi({
+      "GET /api/v1/users/me": all,
+      "GET /api/v1/rbac/permissions": catalogue,
+      [`GET ${path}`]: json(403, { status: 403 }),
+    });
+    renderAt(`/roles/${id}`);
+    expect(await screen.findByText("Você não tem permissão para acessar esta página.")).toBeInTheDocument();
   });
 });

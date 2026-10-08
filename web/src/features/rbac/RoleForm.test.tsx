@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { json, meWith, renderAt, stubApi } from "@/test/render";
+import { json, meWith, pending, renderAt, stubApi } from "@/test/render";
 
 const created = "00000000-0000-4000-8000-0000000000b1";
 const catalogue = json(200, { items: ["rbac:read", "users:create", "users:read"] });
@@ -57,7 +57,9 @@ describe("RoleForm on /roles/new", () => {
     });
     renderAt("/roles/new");
     await fill("Leitor");
-    expect(await screen.findByText("Já existe um papel com este nome.")).toBeInTheDocument();
+    const conflict = await screen.findByText("Já existe um papel com este nome.");
+    expect(conflict.id).toBe("name-error");
+    expect(screen.getByLabelText("Nome")).toHaveAttribute("aria-describedby", "name-error");
   });
 
   it("shows field errors", async () => {
@@ -85,5 +87,29 @@ describe("RoleForm on /roles/new", () => {
     renderAt("/roles/new");
     expect(await screen.findByText("Você não tem permissão para acessar esta página.")).toBeInTheDocument();
     expect(requests.filter((r) => r.path.startsWith("/api/v1/rbac"))).toHaveLength(0);
+  });
+
+  it("forbidden on API 403", async () => {
+    stubApi({ "GET /api/v1/users/me": me, "GET /api/v1/rbac/permissions": json(403, { status: 403 }) });
+    renderAt("/roles/new");
+    expect(await screen.findByText("Você não tem permissão para acessar esta página.")).toBeInTheDocument();
+  });
+
+  it("shows loading", async () => {
+    stubApi({ "GET /api/v1/users/me": me, "GET /api/v1/rbac/permissions": pending });
+    renderAt("/roles/new");
+    expect(await screen.findByRole("status")).toBeInTheDocument();
+  });
+
+  it("shows error with retry", async () => {
+    const requests = stubApi({
+      "GET /api/v1/users/me": me,
+      "GET /api/v1/rbac/permissions": [json(500, { status: 500 }), catalogue],
+    });
+    renderAt("/roles/new");
+    expect(await screen.findByText("Não foi possível carregar os papéis.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+    expect(await screen.findByRole("checkbox", { name: "users:read" })).toBeInTheDocument();
+    expect(requests.filter((r) => r.path === "/api/v1/rbac/permissions")).toHaveLength(2);
   });
 });

@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 15,
+  "next_id": 21,
   "lessons": [
     {
       "id": "L-001",
@@ -173,17 +173,19 @@
       "text": "Classify branching web components under the Test policy and assert every branch, including fallback messages and redirect guards",
       "signal": "ac_gap",
       "scope": "web",
-      "status": "candidate",
+      "status": "confirmed",
       "features": [
-        "users"
+        "users",
+        "rbac"
       ],
-      "recurrence": 1,
+      "recurrence": 2,
       "harmful": 0,
       "evidence": [
-        "web/src/features/users/LoginPage.tsx:21 (web)"
+        "web/src/features/users/LoginPage.tsx:21 (web)",
+        "web/src/features/rbac/RoleForm.tsx:40 (web)"
       ],
       "created": "2026-10-08T16:13:39Z",
-      "last_seen": "2026-10-08T16:13:39Z"
+      "last_seen": "2026-10-08T20:57:58Z"
     },
     {
       "id": "L-011",
@@ -256,6 +258,114 @@
       ],
       "created": "2026-10-08T17:59:48Z",
       "last_seen": "2026-10-08T17:59:48Z"
+    },
+    {
+      "id": "L-015",
+      "key": "surviving_mutant::prove a lock based race guard by forcing both transactions to be in flight before either commits hold a blocking lock and wait for waiters in pg stat activity never by repeating unsynchronised requests",
+      "text": "Prove a lock-based race guard by forcing both transactions to be in flight before either commits (hold a blocking lock and wait for waiters in pg_stat_activity), never by repeating unsynchronised requests",
+      "signal": "surviving_mutant",
+      "scope": "concurrency",
+      "status": "candidate",
+      "features": [
+        "rbac"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "F1 - app/internal/features/rbac/assign_roles/queries.sql:11 (concurrency)"
+      ],
+      "created": "2026-10-08T20:57:57Z",
+      "last_seen": "2026-10-08T20:57:57Z"
+    },
+    {
+      "id": "L-016",
+      "key": "spec_precision_gap::when a check says exactly assert set equality and list framework added statuses such as 500 in the surface",
+      "text": "When a check says exactly, assert set equality, and list framework-added statuses such as 500 in the Surface",
+      "signal": "spec_precision_gap",
+      "scope": "contract",
+      "status": "candidate",
+      "features": [
+        "rbac"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C25 - app/internal/app/rbac_test.go:126 (contract)"
+      ],
+      "created": "2026-10-08T20:57:58Z",
+      "last_seen": "2026-10-08T20:57:58Z"
+    },
+    {
+      "id": "L-017",
+      "key": "ac_gap::when a criterion lists several screens for one state prove the state on every screen named including the api 403 variant",
+      "text": "When a criterion lists several screens for one state, prove the state on every screen named, including the API-403 variant",
+      "signal": "ac_gap",
+      "scope": "web",
+      "status": "candidate",
+      "features": [
+        "rbac"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "AC 27 - web/src/features/rbac/RoleForm.tsx:37 (web)"
+      ],
+      "created": "2026-10-08T20:57:58Z",
+      "last_seen": "2026-10-08T20:57:58Z"
+    },
+    {
+      "id": "L-018",
+      "key": "ac_gap::when a claim says either of two requests prove the failure of each request separately",
+      "text": "When a claim says either of two requests, prove the failure of each request separately",
+      "signal": "ac_gap",
+      "scope": "web",
+      "status": "candidate",
+      "features": [
+        "rbac"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C46 - web/src/features/rbac/UserRoles.tsx:73 (web)"
+      ],
+      "created": "2026-10-08T20:57:58Z",
+      "last_seen": "2026-10-08T20:57:58Z"
+    },
+    {
+      "id": "L-019",
+      "key": "spec_precision_gap::assert where an error message renders its id and the aria describedby link not only that the text exists",
+      "text": "Assert where an error message renders (its id and the aria-describedby link), not only that the text exists",
+      "signal": "spec_precision_gap",
+      "scope": "web",
+      "status": "candidate",
+      "features": [
+        "rbac"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C34 - web/src/features/rbac/RoleForm.test.tsx:60 (web)"
+      ],
+      "created": "2026-10-08T20:57:58Z",
+      "last_seen": "2026-10-08T20:57:58Z"
+    },
+    {
+      "id": "L-020",
+      "key": "ac_gap::when a criterion names a and b or both give the both case its own coverage member and proof",
+      "text": "When a criterion names a and b or both, give the both case its own coverage member and proof",
+      "signal": "ac_gap",
+      "scope": "checks",
+      "status": "candidate",
+      "features": [
+        "rbac"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "AC 9 - app/internal/features/rbac/update_role (checks)"
+      ],
+      "created": "2026-10-08T20:57:58Z",
+      "last_seen": "2026-10-08T20:57:58Z"
     }
   ]
 }

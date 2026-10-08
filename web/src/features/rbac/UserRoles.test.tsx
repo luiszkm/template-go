@@ -114,4 +114,12 @@ describe("UserRoles on /users/$id", () => {
     const element = heading.closest("section") as HTMLElement;
     expect(await within(element).findByText("Não foi possível carregar os papéis.")).toBeInTheDocument();
   });
+
+  it("shows load error for held roles", async () => {
+    stubApi(routes(meWith("users:read", "rbac:read"), { [`GET ${rolesPath}`]: json(500, { status: 500 }) }));
+    renderAt(`/users/${id}`);
+    const heading = await screen.findByRole("heading", { name: "Papéis" });
+    const element = heading.closest("section") as HTMLElement;
+    expect(await within(element).findByText("Não foi possível carregar os papéis.")).toBeInTheDocument();
+  });
 });

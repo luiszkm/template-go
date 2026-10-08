@@ -2,9 +2,11 @@ package app_test
 
 import (
 	"encoding/json"
+	"maps"
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -122,8 +124,7 @@ func TestOpenAPI_RBACStatuses(t *testing.T) {
 		method, path, _ := strings.Cut(key, " ")
 		operation, ok := doc.Paths[path][method]
 		require.True(t, ok, key)
-		for _, status := range statuses {
-			require.Contains(t, operation.Responses, status, key)
-		}
+		documented := slices.Sorted(maps.Keys(operation.Responses))
+		require.Equal(t, slices.Sorted(slices.Values(append(statuses, "500"))), documented, key)
 	}
 }

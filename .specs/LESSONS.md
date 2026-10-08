@@ -8,7 +8,11 @@
 
 Corroborated across multiple features. Safe to apply as guidance.
 
-_none_
+### L-010 - Classify branching web components under the Test policy and assert every branch, including fallback messages and redirect guards
+- signal: `ac_gap` · recurrence: 2 feature(s) · scope: `web` · harmful: 0
+- features: users, rbac
+- evidence: web/src/features/users/LoginPage.tsx:21 (web) (+1 more)
+- last seen: 2026-10-08T20:57:58Z
 
 ## Candidates (under observation - do NOT load as guidance yet)
 
@@ -68,12 +72,6 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: web/src/features/users/UserDetail.tsx:70 (web)
 - last seen: 2026-10-08T16:13:39Z
 
-### L-010 - Classify branching web components under the Test policy and assert every branch, including fallback messages and redirect guards
-- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `web` · harmful: 0
-- features: users
-- evidence: web/src/features/users/LoginPage.tsx:21 (web)
-- last seen: 2026-10-08T16:13:39Z
-
 ### L-011 - Make a check's example input satisfy the precondition it states; a case variant must normalize to the existing value
 - signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `checks` · harmful: 0
 - features: users
@@ -97,6 +95,42 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - features: users
 - evidence: C13 - app/internal/features/users/login/login_test.go:224 failed in task check at fa85de1 (login)
 - last seen: 2026-10-08T17:59:48Z
+
+### L-015 - Prove a lock-based race guard by forcing both transactions to be in flight before either commits (hold a blocking lock and wait for waiters in pg_stat_activity), never by repeating unsynchronised requests
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `concurrency` · harmful: 0
+- features: rbac
+- evidence: F1 - app/internal/features/rbac/assign_roles/queries.sql:11 (concurrency)
+- last seen: 2026-10-08T20:57:57Z
+
+### L-016 - When a check says exactly, assert set equality, and list framework-added statuses such as 500 in the Surface
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `contract` · harmful: 0
+- features: rbac
+- evidence: C25 - app/internal/app/rbac_test.go:126 (contract)
+- last seen: 2026-10-08T20:57:58Z
+
+### L-017 - When a criterion lists several screens for one state, prove the state on every screen named, including the API-403 variant
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `web` · harmful: 0
+- features: rbac
+- evidence: AC 27 - web/src/features/rbac/RoleForm.tsx:37 (web)
+- last seen: 2026-10-08T20:57:58Z
+
+### L-018 - When a claim says either of two requests, prove the failure of each request separately
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `web` · harmful: 0
+- features: rbac
+- evidence: C46 - web/src/features/rbac/UserRoles.tsx:73 (web)
+- last seen: 2026-10-08T20:57:58Z
+
+### L-019 - Assert where an error message renders (its id and the aria-describedby link), not only that the text exists
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `web` · harmful: 0
+- features: rbac
+- evidence: C34 - web/src/features/rbac/RoleForm.test.tsx:60 (web)
+- last seen: 2026-10-08T20:57:58Z
+
+### L-020 - When a criterion names a and b or both, give the both case its own coverage member and proof
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `checks` · harmful: 0
+- features: rbac
+- evidence: AC 9 - app/internal/features/rbac/update_role (checks)
+- last seen: 2026-10-08T20:57:58Z
 
 ## Quarantined (failed when applied - ignore)
 
