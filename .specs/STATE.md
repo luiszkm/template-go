@@ -19,8 +19,8 @@
 
 **Feature**: foundation - done
 **Where**: C1-C75 built and green; independent Verifier round 4 PASS at `b5b76c1` (`task check` exit 0, `task e2e` pass, 4/4 faults killed, `validate_verification.py` exit 0). Rounds 1-3 FAIL closed by S7 (C56-C68), S8 (C69-C73), S9 (C74-C75); 4th round authorized by the user on 2026-10-08
-**In progress**: none
-**Next step**: plan `users` with tlc-spec-lean, `auth-security` skill loaded (its 8 rules become one-way doors/checks)
+**In progress**: `users` - `.specs/features/users/plan.md` written (65 AC, 16 doors), `validate_plan.py` exit 0, awaiting human review
+**Next step**: on approval, derive `.specs/features/users/checks.md`
 **Blockers**: none
 **Uncommitted**: `.claude/skills/auth-security/`, `.cursor/skills/auth-security/` (untracked, user-added)
 **Branch**: `main` (local only, no remote)
