@@ -1,79 +1,82 @@
 # Users verification
 
-**Verdict**: FAIL
+**Verdict**: PASS
 **Profile**: standard
-**Diff range**: 2c12067..fa85de1; fix under review afbc039..fa85de1
-**Round**: 2 - scoped
+**Diff range**: 2c12067..4124e2f; fix under review fa85de1..4124e2f
+**Round**: 3 - scoped
 **Verifier**: independent sub-agent (author != verifier)
 
-O veredito é FAIL por um único motivo: o gate `task check` saiu com código 201. O passo `test` falhou em
-`TestLogin_UnknownEmailTimingMatches` (C13): `"275.8103ms" is not greater than or equal to "392.13095ms"`
-(`unknown 275.8103ms, wrong 784.2619ms`, `login_test.go:224`). O mesmo teste passou em B1, no mesmo commit
-fa85de1, com os pacotes do feature rodando sozinhos. A prova de C13 é, portanto, não determinística: compara a
-mediana de 3 medições de relógio de parede entre duas séries, e sob a carga do gate (26 pacotes com `-p=4`, o
-`cmd/newslice` rodando o gate aninhado, containers Postgres subindo em paralelo) a série de senha errada sofre um
-pico e a razão cai abaixo de 1/2. O fix não tocou `login` nem esse teste; a falha é da prova, não do fix. C13 fica
-como FAIL: uma prova que passa e falha no mesmo commit não prova a check.
+O veredito é PASS. O único gap da rodada 2 era a prova de latência de C13 (`TestLogin_UnknownEmailTimingMatches`),
+que passava e falhava no mesmo commit e deixou o `task check` vermelho. O fix 4124e2f remove essa prova e a cláusula
+de latência de C13, com aprovação do usuário registrada em `checks.md` `## Handoff` ("Settled mid-build (round 2)",
+2026-10-08). Em 4124e2f as 89 checks têm prova rodada, com cada teste nomeado mostrado individualmente como passado,
+e asserção localizada. O fault que faz o caminho de e-mail desconhecido pular a verificação foi morto pela prova
+restante de C13. `task check` saiu com 0 e `task e2e` filtrado passou 2/2.
 
-As 89 checks têm prova rodada em fa85de1, com cada teste nomeado mostrado individualmente como passado, e uma
-asserção localizada. Em B1 e B2 todas passam; no gate, a prova de tempo de C13 falhou (acima), então 88/89 ficam PASS. Os quatro membros sem prova da rodada 1 agora têm prova (C85-C89), as duas
-linhas de Test policy não atendidas foram rejulgadas e estão atendidas, e os três precision gaps (C2, C50, C74)
-estão fechados. Os 5 faults injetados nas superfícies que o fix criou foram mortos.
+C13 restante e AC 10. O AC 10 diz: "IF the email is unknown THEN login SHALL run one argon2id verification against
+a fixed dummy hash before answering". A prova `TestLogin_UnknownEmailVerifiesDummyHash` injeta um verificador que
+registra cada hash recebido e repassa para `password.Verify`, faz login com `nobody@x.com` e afirma 401
+(`login_test.go:194`) e `require.Equal(t, []string{password.DummyHash()}, hashes)` (`login_test.go:195`): exatamente
+uma verificação, contra o hash fictício, antes da resposta. O verificador de produção é `password.Verify`
+(`endpoint.go:55`), que verifica argon2id (C4). O hash fictício é fixo por processo (`sync.OnceValue`,
+`password.go:103-111`) e tem os mesmos parâmetros argon2id dos hashes reais (`TestDummyHash_IsPinned`,
+`password_test.go:71`, `require.Regexp(t, pinnedPHC, password.DummyHash())`; esse teste não está em nenhuma linha
+`Proof:`, mas rodou e passou no gate). Equivalência de tempo, exigida pela regra 3 do auth-security ("No user
+enumeration by ... timing"), fica garantida pelo mesmo trabalho (uma verificação argon2id com os mesmos parâmetros),
+não por medição de relógio. Isso atende o AC 10 como está escrito, que pede o mecanismo, não uma razão de latência.
 
-Escopo pelo diff `afbc039..fa85de1`, não pela mensagem do commit:
+Escopo pelo diff `git diff --stat fa85de1..4124e2f`:
 
-- **Testes novos ou alterados:** `auth_test.go` (C85), `LoginPage.test.tsx` (C88, C89), `UserDetail.test.tsx`
-  (C86, C87), `change_password_test.go` (C50 passa a contar exatamente um evento; as linhas abaixo de `:69`
-  deslocaram 2).
-- **Helpers compartilhados (`testkit`):** `NewAPIWithoutDatabase` (novo, `http.go:45-51`) instala `auth.Install(api,
-  nil, 12h)`, o mesmo valor nil que `app.New` passa quando `DB` é nil (`app/internal/app/app.go:64-69`).
-  `pinDockerHost` (`db.go:58-65`, chamado em `db.go:69` e `postgres.go:23`) só define `DOCKER_HOST` no Windows e só
-  quando está vazio. É ambiente, não comportamento: todos os testes de banco passaram com ele (B1) e no gate.
-- **Config:** `Taskfile.yml` muda `GOFLAGS` para `-p=4 -timeout=30m` e `web/vite.config.ts` ganha
-  `testTimeout: 30_000`. Os dois só alongam limites de tempo; nenhuma asserção, filtro ou inclusão de arquivo muda
-  (`include` está intacto), então nenhum teste deixa de rodar. Efeito colateral aceito: um teste web travado agora
-  leva 30 s para falhar em vez de 5 s.
-- **Fonte de produção:** nenhuma. `git diff --stat afbc039..fa85de1` não toca `auth.go`, `LoginPage.tsx` nem
-  `UserDetail.tsx`. O fix só acrescenta provas.
+- `app/internal/features/users/login/login_test.go` (-29): remove `median` e `TestLogin_UnknownEmailTimingMatches`.
+  Nada mais muda no arquivo; as linhas depois de `:195` subiram 29, e as citações de C14-C18, C58 e C59 foram
+  refeitas.
+- `.specs/features/users/checks.md`: C13 perde a cláusula de latência e a segunda linha `Proof:`; o `Handoff` ganha a
+  aprovação. Nenhuma outra check muda.
+- `.specs/features/users/verification.md`, `.specs/LESSONS.md`, `.specs/lessons.json`: o relatório da rodada 2 e a
+  lição L-014. Não são código nem prova.
+- **Fonte de produção:** nenhuma. `endpoint.go` e `password.go` estão como em fa85de1.
+
+`rg -n "UnknownEmailTimingMatches" app web` não acha nada (exit 1): o teste não existe mais no código.
+`rg -n "^Proof:.*TimingMatches" .specs/features/users/checks.md` também sai com 1: nenhuma linha `Proof:` o nomeia.
+`rg -n --hidden` em `.specs` só o acha no `Handoff` de `checks.md:421` (o registro da aprovação) e no relatório da
+rodada 2, que este arquivo substitui.
 
 ## Binding sources
 
-carried from afbc039. O fix não tocou a interface (nenhum arquivo de produção mudou), então o passo 1 não é
-refeito. O plano não marca nenhuma fonte como binding; as restrições citadas foram abertas na rodada 1.
+carried from fa85de1. O fix não tocou a interface. O plano não marca nenhuma fonte como binding; as restrições
+citadas foram abertas na rodada 1. A regra 3 do auth-security foi relida nesta rodada porque C13 a cobre.
 
 | Source | Opened | Contradiction | Uncovered |
 | --- | --- | --- | --- |
-| `.claude/skills/auth-security/SKILL.md` regras 1-8 | yes - arquivo local (rodada 1; relido nesta rodada) | none | - |
+| `.claude/skills/auth-security/SKILL.md` regras 1-8 | yes - arquivo local (rodada 1; regra 3 relida nesta rodada) | none | - |
 | `.specs/STATE.md` AD-005, AD-006, AD-007 | yes - arquivo local (rodada 1) | none | - |
 
 ## Checks
 
-verified at fa85de1. Rodadas de prova, todas em fa85de1:
+verified at 4124e2f. Rodadas de prova, todas em 4124e2f:
 
-- **B1** - `GOFLAGS=-p=4 go -C app test ./archtest ./cmd/api ./cmd/newslice ./internal/app ./internal/features/users/{activate_user,bootstrap,change_password,create_user,deactivate_user,get_user,list_users,login,logout,me,password,update_user} ./internal/platform/{audit,auth,config,httpx,op} ./migrations -run '^(<74 nomes>)$' -v -count=1`:
-  uma invocação, exit 0, 22 pacotes `ok`, 74/74 `--- PASS` individuais (os 74 nomes distintos dos `Proof:` Go,
-  extraídos do `checks.md`; `comm` entre a lista e os `--- PASS` dá vazio). Inclui
-  `--- PASS: TestMiddleware_NoDatabase503 (0.00s)`, `--- PASS: TestChangePassword_AuditsWithoutPassword (1.00s)`,
-  `--- PASS: TestGeneratedSlice_RequiresSession (132.71s)`.
-- **B2** - `npm --prefix web run test -- <7 arquivos> --reporter=verbose -t "<29 nomes>"`: uma invocação, exit 0,
-  `Test Files 7 passed`, `Tests 31 passed | 1 skipped`. Os 31 nomes dos `Proof:` web aparecem com `✓`, inclusive
+- **B1** - `GOFLAGS=-p=4 go -C app test ./archtest ./cmd/api ./cmd/newslice ./internal/app ./internal/features/users/{activate_user,bootstrap,change_password,create_user,deactivate_user,get_user,list_users,login,logout,me,password,update_user} ./internal/platform/{audit,auth,config,httpx,op} ./migrations -run '^(<73 nomes>)$' -v -count=1 -timeout=30m`:
+  uma invocação, exit 0, 22 pacotes `ok`, nenhum `no tests to run`, 73/73 `--- PASS` individuais, 0 `--- FAIL`. Os 73
+  nomes são os nomes distintos das linhas `Proof:` Go de `checks.md` (eram 74; sai `TestLogin_UnknownEmailTimingMatches`);
+  `comm -3` entre a lista e os `--- PASS` dá vazio. Inclui `--- PASS: TestLogin_UnknownEmailVerifiesDummyHash (0.54s)`,
+  `--- PASS: TestMiddleware_NoDatabase503 (0.00s)`, `--- PASS: TestChangePassword_AuditsWithoutPassword (1.34s)`,
+  `--- PASS: TestGeneratedSlice_RequiresSession (100.33s)`. Uma primeira tentativa desta invocação passou os nomes com
+  `\r` no fim (lista gerada no Windows), casou só 1 teste e saiu com 0 com `no tests to run` em 21 pacotes; foi
+  descartada e refeita com a lista limpa. Fica registrado porque é exatamente o filtro vazio que sai verde.
+- **B2** - `npm --prefix web run test -- <7 arquivos> --reporter=verbose -t "^.*(<29 nomes>)$"`: uma invocação, exit 0,
+  `Test Files 7 passed (7)`, `Tests 31 passed | 1 skipped (32)`. As 31 provas web aparecem com `✓`, inclusive
   `UserDetail > shows error and retries`, `UserDetail > maps 422 errors to fields on edit`,
   `LoginPage > shows a generic message for other failures`, `LoginPage > ignores redirects that leave the site`,
-  `UsersList > hides pagination for 50 users`. `shows loading` e `shows error and retries` existem em dois arquivos
-  e ambos rodaram. O skipped está fora do filtro.
-- **B3** - `task gen:sqlc:check` exit 0, `task gen:openapi:check` exit 0, `npm --prefix web run gen:check` exit 0.
-- **B4** - `task e2e -- -g "login and logout|api online"` (porta 8080 livre antes): exit 0, 2 passed:
-  `e2e/users.spec.ts:4:1 › login and logout`, `e2e/status.spec.ts:5:1 › api online`.
+  `UsersList > hides pagination for 50 users`. `shows loading` e `shows error and retries` existem em dois arquivos e
+  os dois rodaram. O skipped (`UserMenu > shows the users link with users:read`) está fora do filtro.
+- **B3** - geração: no gate, `gen:sqlc:check`, `gen:openapi:check` (`TestOpenAPI_ServedMatchesCommitted` ok) e
+  `gen:web:check` passaram.
+- **B4** - `task e2e -- -g "login and logout|api online"` (porta 8080 livre antes e depois): exit 0, 2 passed:
+  `e2e\users.spec.ts:4:1 › login and logout`, `e2e\status.spec.ts:5:1 › api online`.
 
-Existência dos nomes novos por `rg -n`: `auth_test.go:123` `func TestMiddleware_NoDatabase503`;
-`LoginPage.test.tsx:67` `it("shows a generic message for other failures"`, `:74` `it("ignores redirects that leave
-the site"`; `UserDetail.test.tsx:101` `it("shows error and retries"`, `:113` `it("maps 422 errors to fields on
-edit"`; `UsersList.test.tsx:83` `it("hides pagination for 50 users"`. Todos os arquivos de prova estão no diff
-`2c12067..fa85de1`, exceto `app/archtest/imports_test.go` (C55), teste da foundation que roda sobre o módulo real.
-
-Citações dos arquivos que o fix não tocou vêm da rodada 1 e foram conferidas: o diff `afbc039..fa85de1` só
-acrescenta linhas no fim de `auth_test.go`, `LoginPage.test.tsx` e `UserDetail.test.tsx`, então as linhas
-anteriores não se moveram. Em `change_password_test.go` as citações foram refeitas.
+Citações: o fix só tocou `login_test.go`, e só abaixo de `:195`. As linhas de C13 (`:194-195`) não se moveram; as de
+C14-C18, C58 e C59 foram refeitas com `rg -n` em 4124e2f. As demais vêm da rodada 2 (fa85de1), em arquivos que o fix
+não tocou.
 
 | Check | Claim | Proof run | Evidence | Result |
 | --- | --- | --- | --- | --- |
@@ -89,12 +92,12 @@ anteriores não se moveram. Em `change_password_test.go` as citações foram ref
 | C10 | `NewToken` 43 chars, 32 bytes, 1000 distintos | B1 `TestNewToken_32RandomBytes` PASS | `app/internal/platform/auth/auth_test.go:50` - `require.Len(t, tok, 43)`; `:53` - `require.Len(t, raw, 32)`; `:54` - `require.False(t, seen[tok], "duplicate token")` | PASS |
 | C11 | login com cookie: token novo, sessão antiga apagada e `401` em `/me` | B1 `TestLogin_RotatesExistingSession` PASS | `login_test.go:149` - `NotEqual(first.Value, second.Value)`; `:151` - 0 linhas com o hash antigo; `:152` - 401 | PASS |
 | C12 | 3 falhas -> 401, `invalid email or password`, corpos iguais | B1 `TestLogin_FailuresAreIndistinguishable` PASS | `login_test.go:176` - 401; `:177` - `detail`; `:179-180` - `require.Equal(t, problemWithoutRequest(unknown), problemWithoutRequest(...))` | PASS |
-| C13 | desconhecido verifica uma vez contra o fictício; mediana >= metade | B1 `TestLogin_UnknownEmailVerifiesDummyHash`, `TestLogin_UnknownEmailTimingMatches` PASS; gate `TestLogin_UnknownEmailTimingMatches` FAIL | `login_test.go:195` - `require.Equal(t, []string{password.DummyHash()}, hashes)` (parte determinística, PASS em B1 e no gate); `:224` - `require.GreaterOrEqual(t, unknown, wrong/2, ...)` PASS em B1, mas FAIL no gate em fa85de1: `"275.8103ms" is not greater than or equal to "392.13095ms"`. Prova de tempo não determinística (mediana de 3 amostras de relógio de parede, sensível à carga) | FAIL (flaky) |
-| C14 | 422 para 4 corpos | B1 `TestLogin_InvalidBody422` PASS | `login_test.go:231-234` - os 4 corpos; `:239` - `require.Equal(t, http.StatusUnprocessableEntity, rec.Code)` | PASS |
-| C15 | 5 falhas -> 6ª `429`, `Retry-After` 1..900, verificador não chamado; 4 falhas -> 204 | B1 `TestLogin_RateLimitPerEmail` PASS | `login_test.go:246-250` - 429 e `Retry-After` entre 1 e 900; `:260` - existente e inexistente; `:267` - `require.Equal(t, before, v.calls.Load())`; `:274` - 204 | PASS |
-| C16 | 20 falhas por IP -> 429; outro IP 204; XFF variado segue limitado | B1 `TestLogin_RateLimitPerIP` PASS | `login_test.go:286` - `requireRetryAfter`; `:287` - 204 de outro IP; `:291` - XFF varia; `:294` - `requireRetryAfter` | PASS |
-| C17 | 16 min não bloqueia; 14 min bloqueia | B1 `TestLogin_RateLimitWindowIs15Minutes` PASS | `login_test.go:314` - 204; `:315` - 429; `:318` - 204 (IP); `:320` - 429 (IP) | PASS |
-| C18 | 4 falhas, sucesso, 4 falhas -> 204 | B1 `TestLogin_SuccessClearsEmailFailures` PASS | `login_test.go:334` - 204; `:336` - 204 após a segunda série | PASS |
+| C13 | desconhecido chama o verificador injetado exatamente uma vez, contra o hash fictício fixo (cláusula de latência retirada com aprovação do usuário, `checks.md` Handoff) | B1 `TestLogin_UnknownEmailVerifiesDummyHash` PASS | `app/internal/features/users/login/login_test.go:194` - `require.Equal(t, http.StatusUnauthorized, post(t, h, attempt{email: "nobody@x.com", password: pw}).Code)`; `:195` - `require.Equal(t, []string{password.DummyHash()}, hashes)` (uma única chamada, com o hash fictício, antes da resposta 401). Fault de pular a verificação no caminho desconhecido morto (ver Faults) | PASS |
+| C14 | 422 para 4 corpos | B1 `TestLogin_InvalidBody422` PASS | `login_test.go:202-205` - os 4 corpos; `:210` - `require.Equal(t, http.StatusUnprocessableEntity, rec.Code, rec.Body.String())` | PASS |
+| C15 | 5 falhas -> 6ª `429`, `Retry-After` 1..900, verificador não chamado; 4 falhas -> 204 | B1 `TestLogin_RateLimitPerEmail` PASS | `login_test.go:217` - `require.Equal(t, http.StatusTooManyRequests, rec.Code, ...)`; `:220-221` - `Retry-After` entre 1 e 900; `:231` - existente e inexistente; `:238` - `require.Equal(t, before, v.calls.Load(), ...)`; `:245` - 204 após 4 falhas | PASS |
+| C16 | 20 falhas por IP -> 429; outro IP 204; XFF variado segue limitado | B1 `TestLogin_RateLimitPerIP` PASS | `login_test.go:257` - `requireRetryAfter`; `:258` - 204 de outro IP; `:262` - XFF varia; `:265` - `requireRetryAfter` | PASS |
+| C17 | 16 min não bloqueia; 14 min bloqueia | B1 `TestLogin_RateLimitWindowIs15Minutes` PASS | `login_test.go:285` - 204; `:286` - 429; `:289` - 204 (IP); `:291` - 429 (IP) | PASS |
+| C18 | 4 falhas, sucesso, 4 falhas -> 204 | B1 `TestLogin_SuccessClearsEmailFailures` PASS | `login_test.go:305` - 204; `:307` - 204 após a segunda série | PASS |
 | C19 | logout 204, cookie limpo, linha apagada, `session.deleted`, antigo 401; sem cookie 401 | B1 `TestLogout_DeletesSession`, `TestLogout_WithoutSession401` PASS | `app/internal/features/users/logout/logout_test.go:21` - 204; `:24-26` - `session=;`, `Path=/`, `Max-Age=0`; `:27` - 0 sessões; `:28-29` - evento; `:30-31` - 401; `:38` - 401 sem cookie | PASS |
 | C20 | `/me` 200 com `permissions` `[]`, as duas, e todas para `*` sem `*` | B1 `TestMe_ReturnsPermissions` PASS | `app/internal/features/users/me/me_test.go:38-40` - os 3 casos; `:45` - 200; `:50` - `require.Equal(t, c.want, got.Permissions)`; `:51` - `NotContains(got.Permissions, "*")` | PASS |
 | C21 | 401 problem+json sem handler nos 4 casos; TTL-1m passa | B1 `TestMiddleware_Rejects401`, `TestMe_401WithoutSession` PASS | `auth_test.go:64` - `ttl + 1s`; `:80` - 401; `:81` - problem+json; `:85` - `require.Zero(t, calls.Load())`; `:88-90` - TTL-1m 200; `me_test.go:61-62` | PASS |
@@ -132,10 +135,10 @@ anteriores não se moveram. Em `change_password_test.go` as citações foram ref
 | C53 | `admin` semeado com exatamente `*` | B1 `TestSchema_AdminRoleSeeded` PASS | `schema_test.go:57` - `require.Equal(t, []string{"*"}, perms)` | PASS |
 | C54 | `x/crypto` direto; radix dialog e label | B1 `TestDependencies_UsersFeature` PASS | `app/archtest/users_test.go:20-21`; `:31-32` | PASS |
 | C55 | archtest limpo; `password` dentro da feature; `auth`/`audit` sem `features` | B1 `TestImports_RepositoryIsClean` PASS | `app/archtest/imports_test.go:41` - `require.Empty(t, v)` sobre o módulo real. Observação carregada da rodada 1: `password` tem 5 importadores não-teste contra os "4" do texto; o fix não tocou isso | PASS |
-| C56 | slice gerado: 401, 501 problem+json, teste gerado passa | B1 `TestGeneratedSlice_RequiresSession` PASS (132.71s) | `app/cmd/newslice/repo_test.go:171-173` - teste gerado com 401, `SignIn(... "demo:get_thing")`, 501; `:176-177` - `--- PASS: TestEndpoint_NotImplemented` | PASS |
+| C56 | slice gerado: 401, 501 problem+json, teste gerado passa | B1 `TestGeneratedSlice_RequiresSession` PASS (100.33s) | `app/cmd/newslice/repo_test.go:171-173` - teste gerado com 401, `SignIn(... "demo:get_thing")`, 501; `:176-177` - `--- PASS: TestEndpoint_NotImplemented` | PASS |
 | C57 | `AGENTS.md` cita `Authenticated` e `api users create-admin` | B1 `TestAgentsDoc_MentionsUsersContract` PASS | `app/archtest/users_test.go:37-38` | PASS |
-| C58 | login falho: 1 WARN com `request_id` e `ip`, sem o e-mail | B1 `TestLogin_FailureLogsWarnWithoutEmail` PASS | `login_test.go:356` - `Len(warns, 1)`; `:357-358`; `:359` - `NotContains(buf.String(), "secret.person")` | PASS |
-| C59 | falha apaga tentativas com mais de 15 min | B1 `TestLogin_PrunesOldAttempts` PASS | `login_test.go:365`; `:368` - 0 linhas antigas | PASS |
+| C58 | login falho: 1 WARN com `request_id` e `ip`, sem o e-mail | B1 `TestLogin_FailureLogsWarnWithoutEmail` PASS | `login_test.go:327` - `require.Len(t, warns, 1)`; `:328-329` - `request_id` e `ip`; `:330` - `require.NotContains(t, buf.String(), "secret.person")` | PASS |
+| C59 | falha apaga tentativas com mais de 15 min | B1 `TestLogin_PrunesOldAttempts` PASS | `login_test.go:336` - 3 tentativas de 20 min; `:339` - `require.Equal(t, 0, ... WHERE at <= now() - interval '15 minutes')` | PASS |
 | C60 | `openapi.json` com os status do `Surface`; `schema.d.ts` regenerado | B1 `TestOpenAPI_UsersStatuses` PASS; B3 `gen:openapi:check`, `gen:check` exit 0 | `app/internal/app/users_test.go:117-128` - 10 rotas e status; `:134` - `require.Contains(t, operation.Responses, status, key)` | PASS |
 | C61 | `/users` sem sessão -> `/login?redirect=%2Fusers` | B2 `redirects to login without session` ✓ | `web/src/routes/authed.test.tsx:11` - `toBe("/login?redirect=%2Fusers")` | PASS |
 | C62 | navega para `redirect` ou `/` | B2 `navigates after login` ✓ | `web/src/features/users/LoginPage.test.tsx:23` - `toBe("/users")`; `:32` - `toBe("/")` | PASS |
@@ -169,98 +172,75 @@ anteriores não se moveram. Em `change_password_test.go` as citações foram ref
 
 ## Coverage
 
-Linhas cuja autoridade o fix tocou: verified at fa85de1. As demais: carried from afbc039. O fix não mudou nenhum
-arquivo de produção, então nenhum conjunto ganhou membro novo. Ele só fecha membros sem prova da rodada 1.
+Linhas cuja autoridade o fix tocou (login e regras auth-security, por C13): verified at 4124e2f. As demais: carried
+from fa85de1 ou de afbc039, como cada linha diz. O fix não mudou nenhum arquivo de produção, então nenhum conjunto
+ganhou ou perdeu membro. C13 continua cobrindo o mesmo membro (e-mail desconhecido no login, `endpoint.go:96-100`);
+só a cláusula de latência saiu, por decisão aprovada pelo usuário.
 
 | Set (size) | Recomputed from | Member -> proof | Unproven |
 | --- | --- | --- | --- |
 | status das 10 rotas (47) - carried from afbc039 | plan `Surface` | session POST 204 C8 · 401 C12 · 422 C14 · 429 C15; DELETE 204/401 C19; `/me` 200 C20 · 401 C21; PUT password 204 C50 · 401 C48 · 422 C51; POST users 201 C34 · 409 C35 · 422 C37; GET users 200 C38 · 422 C39; `{id}` 200/204 C40, C42, C44, C47 · 404/422 C41 · 409 C43, C45; 401 e 403 C48; contrato C60 | - |
-| middleware de auth (9 linhas) - verified at fa85de1 | `app/internal/platform/auth/auth.go:126-156` (`rg -n "huma.WriteErr"`: `:134` 503, `:139` 401, `:144` 401, `:148` 500, `:152` 403) | `Public` passa (`:129`) C27, C85 · `Querier` nil -> 503 (`:133-135`) C85 · cookie ausente 401 (`:138`) C21 · `ErrNoSession` 401 (`:143`) C21 · abaixo do TTL passa C21 · sem permissão 403 (`:151`) C25 · `*` / exata C26 · `Authenticated` sem papel C27 · erro de lookup 500 (`:147`) = repasse de erro, Swept `dependency failure` | - |
+| middleware de auth (9 linhas) - carried from fa85de1 | `app/internal/platform/auth/auth.go:126-156` (`rg -n "huma.WriteErr"`: `:134` 503, `:139` 401, `:144` 401, `:148` 500, `:152` 403) | `Public` passa (`:129`) C27, C85 · `Querier` nil -> 503 (`:133-135`) C85 · cookie ausente 401 (`:138`) C21 · `ErrNoSession` 401 (`:143`) C21 · abaixo do TTL passa C21 · sem permissão 403 (`:151`) C25 · `*` / exata C26 · `Authenticated` sem papel C27 · erro de lookup 500 (`:147`) = repasse de erro, Swept `dependency failure` | - |
 | `op.Spec` marcadores (8) + erros documentados (2) - carried from afbc039 | `op.go` | C24; C60 | - |
-| login (`endpoint.go:77-145`) - carried from afbc039 | `login/endpoint.go` | C15 · C16 · C17 · C12 · C13 · C6 · C11 · C18 · C58 · C59 · C8 | - |
-| saídas do `create-admin` (3), entradas rejeitadas (4) - verified at fa85de1 (texto de C2 mudou) | `app/cmd/api/main.go:137-176` | 0 C1 · 1 C2 (`ANA@x.com`, texto agora igual à prova) · 2 C3 | - |
+| login (`endpoint.go:77-145`) - verified at 4124e2f (C13 perdeu a cláusula de latência) | `login/endpoint.go` | C15 · C16 · C17 · C12 · C13 (`:96-100`: hash fictício quando `!found`, uma chamada a `verify` antes do 401 de `:110`) · C6 · C11 · C18 · C58 · C59 · C8 | - |
+| saídas do `create-admin` (3), entradas rejeitadas (4) - carried from fa85de1 (texto de C2 mudou) | `app/cmd/api/main.go:137-176` | 0 C1 · 1 C2 (`ANA@x.com`, texto agora igual à prova) · 2 C3 | - |
 | IP do cliente (6) - carried from afbc039 | `clientip.go:25-50` | C32, C33, `clientip_test.go:42` | - |
 | redação da auditoria (4 chaves, mapa e lista) - carried from afbc039 | `audit.go:22`, `:66-81` | C30 | - |
-| ações de auditoria (7) - verified at fa85de1 (C50 mudou) | `AuditAction` das 10 specs e `bootstrap.go` | `user.created` C1, C34 · `user.updated` C42 · `user.deactivated` C44 · `user.activated` C47 · `user.password_changed` C50 (agora contado: exatamente 1, `change_password_test.go:70-71`) · `session.created` C8 · `session.deleted` C19 | - |
+| ações de auditoria (7) - carried from fa85de1 (C50 mudou) | `AuditAction` das 10 specs e `bootstrap.go` | `user.created` C1, C34 · `user.updated` C42 · `user.deactivated` C44 · `user.activated` C47 · `user.password_changed` C50 (agora contado: exatamente 1, `change_password_test.go:70-71`) · `session.created` C8 · `session.deleted` C19 | - |
 | transições (4), gatilhos de revogação (4) - carried from afbc039 | slices | C44, C47, C46 x2 · C19, C11, C44, C50 | - |
-| config (3), montagem (2) - verified at fa85de1 (testkit tocado) | `config.go`; `app.go:64-69`; `testkit/http.go:40`, `:45-51` | C22, C23 · `cmd/api serve` C23 · `app.New` C48. O helper novo `NewAPIWithoutDatabase` reproduz o caminho `DB == nil` de `app.New` (`sessions` nil passado a `auth.Install`, `app.go:64-69`); C85 é prova da própria camada e não substitui uma montagem | - |
-| tela `/login` (AC 45-48 + mapeamento) - verified at fa85de1 | plan `Observable` + `LoginPage.tsx:21-31` | sucesso com/sem redirect C62 · 401 C63 · 429 C64 · pendente C65 · outro status (`:31`) C88 · `safeRedirect` (`:21-23`): `//host` C89, absoluto `https://` C89, sem `/` C89. `:26` (erro que não é `SignInRefused`) devolve o mesmo texto de `:31`; removê-lo leva ao mesmo retorno de `:31`, então não é linha distinta da tabela | - |
+| config (3), montagem (2) - carried from fa85de1 (testkit tocado) | `config.go`; `app.go:64-69`; `testkit/http.go:40`, `:45-51` | C22, C23 · `cmd/api serve` C23 · `app.New` C48. O helper novo `NewAPIWithoutDatabase` reproduz o caminho `DB == nil` de `app.New` (`sessions` nil passado a `auth.Install`, `app.go:64-69`); C85 é prova da própria camada e não substitui uma montagem | - |
+| tela `/login` (AC 45-48 + mapeamento) - carried from fa85de1 | plan `Observable` + `LoginPage.tsx:21-31` | sucesso com/sem redirect C62 · 401 C63 · 429 C64 · pendente C65 · outro status (`:31`) C88 · `safeRedirect` (`:21-23`): `//host` C89, absoluto `https://` C89, sem `/` C89. `:26` (erro que não é `SignInRefused`) devolve o mesmo texto de `:31`; removê-lo leva ao mesmo retorno de `:31`, então não é linha distinta da tabela | - |
 | tela `/users` (6) - carried from afbc039 | plan `Observable` + AC 51-56 | C69 · C70 · C71 · C72 · C73 · C74 (incl. `total` 50, agora em `Proof:`) | - |
-| tela `/users/$id` (Observable: loading, error, not found + AC 55, 58-63) - verified at fa85de1 | plan `Observable` + AC 59 + `UserDetail.tsx:69-101` | loading C71 · erro e retry (`:94-101`) C86 · 403 C73 · 404 C82 · patch C78 · 409 (`:69`) C76 · 422 na edição (`:70`) C87 · confirmar C79 · self C80 · ativar C81 | - |
+| tela `/users/$id` (Observable: loading, error, not found + AC 55, 58-63) - carried from fa85de1 | plan `Observable` + AC 59 + `UserDetail.tsx:69-101` | loading C71 · erro e retry (`:94-101`) C86 · 403 C73 · 404 C82 · patch C78 · 409 (`:69`) C76 · 422 na edição (`:70`) C87 · confirmar C79 · self C80 · ativar C81 | - |
 | telas `/users/new` (3), `/account/password` (3), redirects (2) - carried from afbc039 | AC 57-59, 64-65, 44, 50 | C75, C76, C77 · C83 x2, C84 · C61, C67 | - |
-| regras auth-security (8) - carried from afbc039 | `.claude/skills/auth-security/SKILL.md` | 1 C9, C10 · 2 C11 · 3 C12, C13 · 4 C4-C6 · 5 C8, C23 · 6 C44 · 7 C15, C16 · 8 C32, C33 | - |
-| doors do Landing (18) - verified at fa85de1 (tabela do `checks.md` corrigida para 18) | plan `Landing` | 1 C52 · 2 C35, C36, C52 · 3 C4, C5 · 4 C8-C10, C52 · 5 C24 · 6 C21, C25 · 7 C26, C53 · 8 C28, C31 · 9 C32, C33 · 10 C17, C52, C59 · 11 C55 · 12 C54 · 13 C1, C3 · 14 C49, C60 · 15 C22, C23 · 16 C61 · 17 C60 · 18 C48 | - |
-
-Sweep refeito em fa85de1 (fonte de produção idêntica a afbc039):
-
-- `rg -n "huma.WriteErr" app/internal/platform/auth/auth.go`: 5 escritas. A de `:134` agora tem C85; a de `:148` é
-  o caminho de erro genérico.
-- `rg -n "status === |isError|instanceof SignInRefused|safeRedirect" web/src/features/users/*.tsx web/src/routes/_authed.tsx`:
-  `UserDetail.tsx:69`, `:70`, `:83`, `:86`, `:94`; `UsersList.tsx:28`, `:38`; `UserForm.tsx:27-28`;
-  `ChangePassword.tsx:23`; `_authed.tsx:10`; `LoginPage.tsx:21`, `:26-28`, `:49`. Todos têm caso afirmado.
-- O `Coverage` do `checks.md` agora lista os membros que a rodada 1 encontrou (middleware 10, `/login` 6,
-  `/users/$id` 10, doors 18) e bate com o recálculo acima.
+| regras auth-security (8) - verified at 4124e2f (regra 3 depende de C13) | `.claude/skills/auth-security/SKILL.md` | 1 C9, C10 · 2 C11 · 3 C12, C13 (verificação argon2id contra o hash fictício fixo; tempo garantido pelo mesmo trabalho, não por relógio) · 4 C4-C6 · 5 C8, C23 · 6 C44 · 7 C15, C16 · 8 C32, C33 | - |
+| doors do Landing (18) - carried from fa85de1 (tabela do `checks.md` corrigida para 18) | plan `Landing` | 1 C52 · 2 C35, C36, C52 · 3 C4, C5 · 4 C8-C10, C52 · 5 C24 · 6 C21, C25 · 7 C26, C53 · 8 C28, C31 · 9 C32, C33 · 10 C17, C52, C59 · 11 C55 · 12 C54 · 13 C1, C3 · 14 C49, C60 · 15 C22, C23 · 16 C61 · 17 C60 · 18 C48 | - |
 
 ## Test policy rows
 
-verified at fa85de1 para as duas linhas não atendidas na rodada 1 e para as linhas que classificam arquivos tocados
-(`testkit/*`). As demais: carried from afbc039.
+A linha que classifica `features/users/login/endpoint.go` foi rejulgada: verified at 4124e2f. As demais: carried from
+fa85de1 (todas estavam atendidas na rodada 2 e o fix não tocou os arquivos que elas classificam).
 
 | Row | Files it classifies | Required proof | Expectation met |
 | --- | --- | --- | --- |
-| Decides, reached across a boundary | `internal/platform/auth/auth.go` (middleware) | own layer C21, C25, C26, C27, C85 · boundary C48 | yes - as 9 linhas da tabela de decisão têm caso afirmado, inclusive `Querier` nil -> 503 (C85, `auth_test.go:134`); boundary C48 (verified at fa85de1) |
-| Decides, reached across a boundary | `internal/platform/op/op.go`; `features/users/login/endpoint.go` | own layer C24 · boundary C49, C60; login C6, C8-C18, C58, C59 · montado C23, C68 | yes (carried from afbc039) |
-| Decides, not reached across a boundary | `httpx/clientip.go`, `audit/audit.go` (redação), `features/users/password/password.go`, `config.Prefixes` | C32, C33 · C30 · C4, C5 · C22 | yes (carried from afbc039) |
-| Decides (slice HTTP é a borda e a própria camada) | `features/users/{create_user,update_user,deactivate_user,activate_user,change_password}`, `bootstrap` | C34-C37, C41-C47, C50, C51 · C1-C3 | yes (C50 agora conta o evento; verified at fa85de1) |
-| Decides, not reached across a boundary (web) | `web/src/features/users/LoginPage.tsx`, `UserDetail.tsx`, `UsersList.tsx`, `UserForm.tsx`, `ChangePassword.tsx`, `routes/_authed.tsx`; agora classificados no `checks.md` | um caso por linha do mapeamento | yes - outro status C88, guarda de redirect C89, 422 na edição C87, erro do detalhe C86; as demais linhas C61-C84 (verified at fa85de1) |
-| Entry point that decides nothing | `features/users/{list_users,get_user,me,logout}` | boundary C38-C41, C20, C21, C19 | yes (carried from afbc039) |
-| Instrumentation, pass-throughs | `audit.Record` (insert), `testkit/*` (incl. `NewAPIWithoutDatabase`, `pinDockerHost`), `userstest`, `deps`, `email.Normalize`, `web/src/api/client.ts`, `session.ts` | none of its own | yes - `NewAPIWithoutDatabase` é coberto por C85 e `pinDockerHost` por todo teste de banco em B1 e no gate (verified at fa85de1) |
+| Decides, reached across a boundary | `internal/platform/auth/auth.go` (middleware) | own layer C21, C25, C26, C27, C85 · boundary C48 | yes - as 9 linhas da tabela de decisão têm caso afirmado, inclusive `Querier` nil -> 503 (C85, `auth_test.go:134`); boundary C48 (carried from fa85de1) |
+| Decides, reached across a boundary | `internal/platform/op/op.go`; `features/users/login/endpoint.go` | own layer C24 · boundary C49, C60; login C6, C8-C18, C58, C59 · montado C23, C68 | yes - C13 prova a decisão `found`/hash fictício em `endpoint.go:96-100` contando a chamada ao verificador (`login_test.go:195`) e o fault que remove a chamada é morto (verified at 4124e2f) |
+| Decides, not reached across a boundary | `httpx/clientip.go`, `audit/audit.go` (redação), `features/users/password/password.go`, `config.Prefixes` | C32, C33 · C30 · C4, C5 · C22 | yes (carried from fa85de1) |
+| Decides (slice HTTP é a borda e a própria camada) | `features/users/{create_user,update_user,deactivate_user,activate_user,change_password}`, `bootstrap` | C34-C37, C41-C47, C50, C51 · C1-C3 | yes (carried from fa85de1) |
+| Decides, not reached across a boundary (web) | `web/src/features/users/LoginPage.tsx`, `UserDetail.tsx`, `UsersList.tsx`, `UserForm.tsx`, `ChangePassword.tsx`, `routes/_authed.tsx`; agora classificados no `checks.md` | um caso por linha do mapeamento | yes - outro status C88, guarda de redirect C89, 422 na edição C87, erro do detalhe C86; as demais linhas C61-C84 (carried from fa85de1) |
+| Entry point that decides nothing | `features/users/{list_users,get_user,me,logout}` | boundary C38-C41, C20, C21, C19 | yes (carried from fa85de1) |
+| Instrumentation, pass-throughs | `audit.Record` (insert), `testkit/*` (incl. `NewAPIWithoutDatabase`, `pinDockerHost`), `userstest`, `deps`, `email.Normalize`, `web/src/api/client.ts`, `session.ts` | none of its own | yes - `NewAPIWithoutDatabase` é coberto por C85 e `pinDockerHost` por todo teste de banco em B1 e pelo gate (carried from fa85de1) |
 
 ## Faults injected
 
-verified at fa85de1. Um fault por superfície que o fix criou.
-
-Isolamento: `git worktree add %TEMP%\users-verify-r2 HEAD` (fa85de1). Para o web, foi criada a junction
-`web\node_modules` com `mklink /J`, removida com `rmdir` antes de `git worktree remove --force` e `git worktree
-prune`. Cada fault foi aplicado sozinho e revertido com `git checkout -- .` no scratch antes do próximo; a porcelain
-do scratch ficou vazia entre faults. A porcelain da árvore real antes e depois é idêntica (`diff` vazio): só os dois
-diretórios `.claude/skills/auth-security/` e `.cursor/skills/auth-security/` não rastreados que já existiam.
+verified at 4124e2f para a superfície que o fix tocou (C13). Isolamento: `git worktree add %TEMP%\users-verify-r3 HEAD`
+(4124e2f). Porcelain da árvore real antes e depois: idêntica (`diff` vazio), só `?? .claude/skills/auth-security/` e
+`?? .cursor/skills/auth-security/`. O fault foi revertido com `git checkout -- .` no scratch, e o worktree foi removido
+com `git worktree remove --force` e `git worktree prune`; `git worktree list` mostra só a árvore real.
 
 | Mutation | Location | Killed |
 | --- | --- | --- |
-| ramo `Querier` nil abre em vez de responder 503 (`huma.WriteErr(... 503 ...)` -> `next(ctx)`) | `app/internal/platform/auth/auth.go:134` | yes - `TestMiddleware_NoDatabase503` FAIL: expected 503, actual 200 (C85) |
-| `safeRedirect` sem a guarda `!redirect.startsWith("//")` | `web/src/features/users/LoginPage.tsx:22` | yes - `LoginPage > ignores redirects that leave the site` ×: expected `/evil.example` to be `/` (C89) |
-| mensagem de "outro status" troca para `E-mail ou senha inválidos.` | `web/src/features/users/LoginPage.tsx:31` | yes - `LoginPage > shows a generic message for other failures` ×: unable to find `Não foi possível entrar. Tente novamente.` (C88) |
-| mapeamento de `422` na edição removido | `web/src/features/users/UserDetail.tsx:70` | yes - `UserDetail > maps 422 errors to fields on edit` ×: unable to find `expected length <= 100` (C87) |
-| `Tentar novamente` do detalhe deixa de chamar `user.refetch()` | `web/src/features/users/UserDetail.tsx:98` | yes - `UserDetail > shows error and retries` ×: unable to find heading `b@x.com` (C86) |
+| caminho de e-mail desconhecido pula a verificação: `verify(...)` só roda `if found`, `match` fica `false` (o 401 continua) | `app/internal/features/users/login/endpoint.go:100` | yes - `TestLogin_UnknownEmailVerifiesDummyHash` FAIL em `login_test.go:195`: expected `[]string{"$argon2id$v=19$m=65536,t=3,p=4$..."}`, actual `[]string(nil)` (C13) |
 
-Os 5 faults da rodada 1 (curinga `*`, limite por e-mail, revogação na desativação, redação em listas, `Math.ceil`)
-ficam carried from afbc039: o fix não tocou nenhuma dessas superfícies nem os testes que as mataram.
+Os 5 faults da rodada 2 (C85-C89) ficam carried from fa85de1 e os 5 da rodada 1 (curinga `*`, limite por e-mail,
+revogação na desativação, redação em listas, `Math.ceil`) carried from afbc039: o fix não tocou essas superfícies nem
+os testes que as mataram.
 
 ## Decisions and constraints
 
-carried from afbc039, conferido no diff do fix. O fix não acrescenta comentários em código: `testkit/db.go`,
-`testkit/http.go` e os testes novos não têm nenhum. O comentário de `testkit/postgres.go:20` já existia. A
-observação da rodada 1 sobre AD-011 em `op.go:1-3`, `op.go:28` e `cmd/api/main.go:6` continua fora do veredito,
-porque nenhuma check a afirma.
+carried from fa85de1. O fix não acrescenta código nem comentários; só remove um teste e o helper `median`, que só
+ele usava. A remoção da cláusula de latência é decisão do usuário registrada no `Handoff` de `checks.md`.
 
 ## Gate
 
-verified at fa85de1. Rodado uma vez, sozinho, da raiz do repositório.
+verified at 4124e2f. Rodado uma vez, sozinho, da raiz do repositório.
 
-`task check` - **exit 201**, 708 s. FAIL.
+`task check` - **exit 0**, 1138 s.
 
-- `fmt:check`, `lint`, `gen:check` (sqlc, openapi `TestOpenAPI_ServedMatchesCommitted` ok, web `gen:check`) e
-  `archtest` (ok 93.0 s) passaram.
-- `test` (`go test -count=1 ./...` com `GOFLAGS=-p=4 -timeout=30m`): 25 pacotes `ok`, inclusive `cmd/newslice`
-  (561.1 s, gate aninhado) e todos os demais pacotes do feature; **1 pacote FAIL**:
-  `internal/features/users/login` - `--- FAIL: TestLogin_UnknownEmailTimingMatches (3.73s)`,
-  `login_test.go:224: "275.8103ms" is not greater than or equal to "392.13095ms"`, `unknown 275.8103ms, wrong
-  784.2619ms`.
-- `web:typecheck`, `web:lint` e `web:test` **não rodaram no gate**, porque `check` para no primeiro passo que falha.
-  Rodados à parte depois do gate, só como informação (não substituem o gate): `task web:typecheck` exit 0,
-  `task web:lint` exit 0 (biome, 57 arquivos), `task web:test` exit 0, 13 arquivos, 43 passed.
-
-Pela instrução desta rodada o gate roda uma única vez; ele não foi repetido para fazer a falha sumir.
+- `fmt:check` ok, `lint` (golangci-lint) ok, `gen:sqlc:check`, `gen:openapi:check` e `gen:web:check` ok, `archtest`
+  ok (81.7 s).
+- `test` (`go test -count=1 ./...`, `GOFLAGS=-p=4 -timeout=30m`): 25 pacotes `ok`, 0 `FAIL`, inclusive
+  `internal/features/users/login` (71.3 s) e `cmd/newslice` (930.3 s, gate aninhado).
+- `web:typecheck` ok, `web:lint` ok (`Checked 57 files`), `web:test`: `Test Files 13 passed (13)`, `Tests 43 passed (43)`.
 
 `task e2e -- -g "login and logout|api online"` - exit 0, 2 passed (B4).

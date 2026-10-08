@@ -175,13 +175,13 @@ mudança. Desativar um usuário derruba suas sessões na requisição seguinte.
 
 | ID | Slice | Criteria | Status |
 | --- | --- | --- | --- |
-| USR-01 | S1 | 1, 2, 3, 4, 5 | Pending |
-| USR-02 | S2 | 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 | Pending |
-| USR-03 | S3 | 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 | Pending |
-| USR-04 | S4 | 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41 | Pending |
-| USR-05 | S5 | 42, 43 | Pending |
-| USR-06 | S6 | 44, 45, 46, 47, 48, 49, 50 | Pending |
-| USR-07 | S7 | 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65 | Pending |
+| USR-01 | S1 | 1, 2, 3, 4, 5 | Verified |
+| USR-02 | S2 | 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 | Verified |
+| USR-03 | S3 | 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 | Verified |
+| USR-04 | S4 | 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41 | Verified |
+| USR-05 | S5 | 42, 43 | Verified |
+| USR-06 | S6 | 44, 45, 46, 47, 48, 49, 50 | Verified |
+| USR-07 | S7 | 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65 | Verified |
 
 ## Observable
 

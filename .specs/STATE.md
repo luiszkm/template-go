@@ -18,10 +18,10 @@
 
 ## Handoff
 
-**Feature**: foundation - done
-**Where**: C1-C75 built and green; independent Verifier round 4 PASS at `b5b76c1` (`task check` exit 0, `task e2e` pass, 4/4 faults killed, `validate_verification.py` exit 0). Rounds 1-3 FAIL closed by S7 (C56-C68), S8 (C69-C73), S9 (C74-C75); 4th round authorized by the user on 2026-10-08
-**In progress**: `users` - `.specs/features/users/plan.md` written (65 AC, 16 doors), `validate_plan.py` exit 0, awaiting human review
-**Next step**: on approval, derive `.specs/features/users/checks.md`
+**Feature**: users - done
+**Where**: C1-C89 built and green; independent Verifier round 3 PASS at `4124e2f` (`task check` exit 0, `task e2e` pass, fault killed, `validate_verification.py` exit 0). Round 1 FAIL closed by C85-C89 (`fa85de1`); round 2 FAIL (flaky C13 timing proof) closed by dropping that proof with user approval (`4124e2f`)
+**In progress**: none
+**Next step**: plan `rbac` (role management endpoints; role changes must delete the user's sessions in the same transaction, auth-security rule 6) or `audit` (read-only audit log)
 **Blockers**: none
 **Uncommitted**: `.claude/skills/auth-security/`, `.cursor/skills/auth-security/` (untracked, user-added)
 **Branch**: `main` (local only, no remote)
