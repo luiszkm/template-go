@@ -73,3 +73,15 @@ func TestGetEvent_IPPresentOrNull(t *testing.T) {
 	require.Equal(t, "10.0.0.7", ipOf(withIP))
 	require.Nil(t, ipOf(withoutIP))
 }
+
+func TestGetEvent_ActorNull(t *testing.T) {
+	pool := testkit.MigratedDB(t)
+	h := audittest.Serve(t, pool, getevent.Register)
+	caller := testkit.SignIn(t, pool, "audit:read")
+	id := audittest.Insert(t, pool, audittest.Event{})
+	rec := testkit.Do(t, h, testkit.Request{Method: http.MethodGet, Path: fmt.Sprintf("/api/v1/audit/events/%d", id), Cookie: caller.Cookie})
+	require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+	body := testkit.JSON[map[string]any](t, rec)
+	require.Contains(t, body, "actor")
+	require.Nil(t, body["actor"])
+}

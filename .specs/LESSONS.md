@@ -162,6 +162,24 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: C16 - app/migrations/schema_test.go:82 (migrations)
 - last seen: 2026-10-08T23:47:09Z
 
+### L-026 - A test that inserts a fixture with a null field but asserts only the status does not prove the null arm; assert the value
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `checks` · harmful: 0
+- features: audit
+- evidence: audit round 2 - app/internal/features/audit/get_event/get_event_test.go:68 (checks)
+- last seen: 2026-10-09T00:11:19Z
+
+### L-027 - When a fix adds a Test policy classification, add the proofs that row requires at the code's own layer in the same fix
+- signal: `spec_deviation` · recurrence: 1 feature(s) · scope: `checks` · harmful: 0
+- features: audit
+- evidence: audit round 2 - checks.md Test policy event.From (checks)
+- last seen: 2026-10-09T00:11:20Z
+
+### L-028 - Removing a key from a TanStack Router validateSearch schema is an equivalent mutant because raw search params pass through; inject URL faults in the component instead
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `web` · harmful: 0
+- features: audit
+- evidence: audit round 2 - web/src/routes/_authed/audit/index.tsx (web)
+- last seen: 2026-10-09T00:11:20Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

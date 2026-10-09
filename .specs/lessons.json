@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 26,
+  "next_id": 29,
   "lessons": [
     {
       "id": "L-001",
@@ -460,6 +460,60 @@
       ],
       "created": "2026-10-08T23:47:09Z",
       "last_seen": "2026-10-08T23:47:09Z"
+    },
+    {
+      "id": "L-026",
+      "key": "ac_gap::a test that inserts a fixture with a null field but asserts only the status does not prove the null arm assert the value",
+      "text": "A test that inserts a fixture with a null field but asserts only the status does not prove the null arm; assert the value",
+      "signal": "ac_gap",
+      "scope": "checks",
+      "status": "candidate",
+      "features": [
+        "audit"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "audit round 2 - app/internal/features/audit/get_event/get_event_test.go:68 (checks)"
+      ],
+      "created": "2026-10-09T00:11:19Z",
+      "last_seen": "2026-10-09T00:11:19Z"
+    },
+    {
+      "id": "L-027",
+      "key": "spec_deviation::when a fix adds a test policy classification add the proofs that row requires at the code s own layer in the same fix",
+      "text": "When a fix adds a Test policy classification, add the proofs that row requires at the code's own layer in the same fix",
+      "signal": "spec_deviation",
+      "scope": "checks",
+      "status": "candidate",
+      "features": [
+        "audit"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "audit round 2 - checks.md Test policy event.From (checks)"
+      ],
+      "created": "2026-10-09T00:11:20Z",
+      "last_seen": "2026-10-09T00:11:20Z"
+    },
+    {
+      "id": "L-028",
+      "key": "spec_precision_gap::removing a key from a tanstack router validatesearch schema is an equivalent mutant because raw search params pass through inject url faults in the component instead",
+      "text": "Removing a key from a TanStack Router validateSearch schema is an equivalent mutant because raw search params pass through; inject URL faults in the component instead",
+      "signal": "spec_precision_gap",
+      "scope": "web",
+      "status": "candidate",
+      "features": [
+        "audit"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "audit round 2 - web/src/routes/_authed/audit/index.tsx (web)"
+      ],
+      "created": "2026-10-09T00:11:20Z",
+      "last_seen": "2026-10-09T00:11:20Z"
     }
   ]
 }

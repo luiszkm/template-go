@@ -5,7 +5,7 @@ Plan: `.specs/features/audit/plan.md`
 
 ## Intent
 
-37 checks in 8 slices · 4 one-way doors · 0 open
+38 checks in 9 slices · 4 one-way doors · 0 open
 
 Comandos reais do repositório: `go -C app test <pkg> -run '<regex>'`, `npm --prefix web run test -- <file> -t "<name>"`
 e `npm --prefix web run e2e -- <spec>`. Testes Go que tocam o banco usam `testkit.MigratedDB` (Postgres real). Os
@@ -154,6 +154,12 @@ Proof: `npm --prefix web run test -- src/features/audit/AuditDetail.test.tsx -t 
 **C37** - Opening `/audit?de=2026-10-01&ate=2026-10-02` makes the first events request carry `from=2026-10-01T03:00:00.000Z` and `to=2026-10-03T03:00:00.000Z`, and fills `De` and `Até` with those dates (AUD-05, AC 24, AC 26) `[done]`
 Proof: `npm --prefix web run test -- src/features/audit/AuditList.test.tsx -t "reads the period from the URL"`
 
+### S9 - Lacunas da verificação, rodada 2 · ~2 files · ~4 KB · ~1k
+
+**C38** - `event.From` maps its 4 rows at its own layer: actor present gives `{id, email}`, actor absent gives `nil`, ip `10.0.0.7` gives that string, empty ip gives `nil`; and `GET /api/v1/audit/events/{id}` of an event with no actor returns `"actor": null` (AUD-01, AC 2; AUD-03, AC 12; Test policy - `event.From`) `[done]`
+Proof: `go -C app test ./internal/features/audit/event -run '^TestFrom_ActorAndIPArms$'`
+Proof: `go -C app test ./internal/features/audit/get_event -run '^TestGetEvent_ActorNull$'`
+
 ## Coverage
 
 | Set (size) | Member -> proof | Unproven |
@@ -162,8 +168,9 @@ Proof: `npm --prefix web run test -- src/features/audit/AuditList.test.tsx -t "r
 | `GET /api/v1/audit/events/{id}` statuses (6) | 200 C12 · 401 C14 · 403 C14 · 404 C13 · 422 C13 · 500 documented C17 | - |
 | `GET /api/v1/audit/actions` statuses (4) | 200 C11 · 401 C14 · 403 C14 · 500 documented C17 | - |
 | list item keys (8) | C1, table-driven over all 8 (exact key set) | - |
-| actor shapes (2) | user C2 · null C2 | - |
-| ip shapes (2) | present C35 · null C35 | - |
+| actor shapes (2) | user C2, C12, C38 · null C2, C38 | - |
+| ip shapes (2) | present C35, C38 · null C35, C38 | - |
+| `event.From` rows at own layer (4) | C38, table-driven over all 4 | - |
 | page outcomes (3) | default 50 with next C3 · limit with next C3 · last page null C3 | - |
 | cursor edges (2) | below the newest C4 · below the oldest C4 | - |
 | rejected list inputs (7) | C5, table-driven over all 7 | - |
@@ -199,7 +206,7 @@ Evidence (planned code, by shape):
 
 - `features/audit/list_events`: 7 input validations, 6 optional filters, cursor and `next` decision -> decides at the slice boundary; its HTTP test is its own layer (C1-C10)
 - `features/audit/get_event`: lookup or `404` -> entry point (C12, C13)
-- `features/audit/event.From` (added in the build, classified in verification round 1): maps actor present/absent and ip present/absent -> decides, reached across two slices; each arm asserted through both boundaries (C2, C35)
+- `features/audit/event.From` (added in the build, classified in verification round 1): maps actor present/absent and ip present/absent -> decides, reached across two slices; each arm asserted at its own layer (C38) and through the list and detail boundaries (C2, C35, C38)
 - `platform/op.AuditActions`: dedup, skip empty, sort -> decides, reached across a boundary (C11 own layer and through `list_actions` and the assembled server)
 - `features/audit/list_actions`: forwards `op.AuditActions` -> instrumentation, proven through C11
 - `web/src/features/audit/{AuditList,AuditDetail}.tsx` and the date-to-range helper: map status, permission and filters to screen state and request parameters -> decides, not reached across a boundary; one asserted case per branch (C19-C33)
