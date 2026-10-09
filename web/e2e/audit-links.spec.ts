@@ -47,3 +47,24 @@ test("admin follows Ver ações on self", async ({ page }) => {
   const rows = await eventRows(page).all();
   for (const row of rows) await expect(row.locator("td").nth(2)).toHaveText(admin.email);
 });
+
+test("admin follows Ver auditoria from a role", async ({ page }) => {
+  await signInAsNewAdmin(page);
+  await page.goto("/roles/new");
+  await page.getByLabel("Nome").fill(`Auditado ${randomUUID().slice(0, 8)}`);
+  await page.getByRole("checkbox", { name: "users:read" }).check();
+  await page.getByRole("button", { name: "Criar" }).click();
+  await expect(page).toHaveURL(/\/roles\/[0-9a-f-]{36}$/);
+  const roleId = page.url().split("/").at(-1) ?? "";
+
+  await page.getByRole("link", { name: "Ver auditoria" }).click();
+
+  await expect(page).toHaveURL(/\/audit\?/);
+  const search = new URL(page.url()).searchParams;
+  expect(search.get("resource_type")).toBe("role");
+  expect(search.get("resource_id")).toBe(roleId);
+  await expect(page.getByRole("button", { name: "Limpar filtros" })).toBeVisible();
+  await expect(eventRows(page).filter({ hasText: "role.created" })).toHaveCount(1);
+  const rows = await eventRows(page).all();
+  for (const row of rows) await expect(row.locator("td").nth(3)).toHaveText(`role ${roleId}`);
+});

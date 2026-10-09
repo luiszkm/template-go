@@ -3,7 +3,7 @@
 Profile: standard
 Plan: `.specs/features/audit-links/plan.md`
 
-10 checks in 3 slices · 0 one-way doors · 0 open, of which 0 block
+11 checks in 3 slices · 0 one-way doors · 0 open, of which 0 block
 
 ## Checks
 
@@ -43,6 +43,9 @@ Proof: `task e2e -- audit-links.spec.ts -g "follows Ver auditoria from a user"`
 **C10** - Um admin abre o próprio `/users/<id>` e clica `Ver ações`; a URL tem `actor_id=<id>`, a tabela tem pelo menos uma linha e toda linha tem `Quem` igual ao e-mail do admin (AUDL-03, AC 9) `[done]`
 Proof: `task e2e -- audit-links.spec.ts -g "follows Ver ações on self"`
 
+**C11** - Um admin cria um papel, abre `/roles/<id>` e clica `Ver auditoria`; a URL tem `resource_type=role` e `resource_id=<id>`, a tabela tem exatamente uma linha `role.created`, toda linha tem `Recurso` `role <id>`, e `Limpar filtros` aparece (AUDL-02, AC 5; Test policy - prova na fronteira de `RoleDetail`, lacuna da verificação rodada 1) `[done]`
+Proof: `task e2e -- audit-links.spec.ts -g "follows Ver auditoria from a role"`
+
 ## Coverage
 
 | Set (size) | Member -> proof | Unproven |
@@ -50,7 +53,7 @@ Proof: `task e2e -- audit-links.spec.ts -g "follows Ver ações on self"`
 | links da tela de usuário (2) | `Ver auditoria` C1 · `Ver ações` C2 | - |
 | ramos de visibilidade em `UserDetail` (6) | carregado com `audit:read` C1, C2 · sem `audit:read` C3 · pendente C4 · `404` C4 · `403` C4 · `500` C4 | - |
 | ramos de visibilidade em `RoleDetail` (7) | carregado com `audit:read` C5 · `admin` travado C8 · sem `audit:read` C6 · pendente C7 · `404` C7 · `403` C7 · `500` C7 | - |
-| filtros de `/audit` usados por link (3) | `resource_type`+`resource_id` de usuário C1, C9 · `resource_type`+`resource_id` de papel C5 · `actor_id` C2, C10 | - |
+| filtros de `/audit` usados por link (3) | `resource_type`+`resource_id` de usuário C1, C9 · `resource_type`+`resource_id` de papel C5, C11 · `actor_id` C2, C10 | - |
 
 - O plano não tem `Surface`, `Relations` nem `Landing` com linhas; nada mais a juntar
 - Claims naming a URL: C1, C2, C5, C8 afirmam o `href` exato na própria camada; C9, C10 cruzam até a API real
@@ -69,7 +72,7 @@ O `AGENTS.md` já responde às duas perguntas (`## Test policy`); estas são as 
 Evidence (planned code, by shape):
 
 - `features/users/UserDetail`: o ramo novo decide mostrar ou não os links (permissão `audit:read` × 5 estados do pedido, 6 casos) -> decides, reached across a boundary: own layer C1-C4 (Vitest), boundary C9-C10 (Playwright contra a API real)
-- `features/rbac/RoleDetail`: mesmo ramo, mais o `admin` travado (7 casos) -> decides, reached across a boundary: own layer C5-C8, boundary por analogia ao C9 (mesmo filtro `resource_type`+`resource_id` em `/audit`, já provado pelo plano `audit`, AC 25 e AC 26)
+- `features/rbac/RoleDetail`: mesmo ramo, mais o `admin` travado (7 casos) -> decides, reached across a boundary: own layer C5-C8, boundary C11 (Playwright contra a API real)
 - closest analogue: o link `Auditoria` do `UserMenu`, gated por `audit:read` e provado em `UserMenu.test.tsx`
 
 ## Swept
