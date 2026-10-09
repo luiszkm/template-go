@@ -30,7 +30,9 @@ linters:
     rules:
       - path: _test\.go
         linters: [gosec]
-      - path: (cmd/(agenthooks|fmtcheck|newslice|sqlcrun|webcopy)|archtest)/
+      - path: (cmd/(agenthooks|fmtcheck|newslice|rename|sqlcrun|webcopy)|archtest)/
+        linters: [gosec]
+      - path: internal/platform/testkit/repocopy\.go
         linters: [gosec]
 formatters:
   enable:

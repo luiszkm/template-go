@@ -43,6 +43,7 @@ Commands (all from the repository root):
 | --- | --- |
 | `task dev` | Postgres in Docker + migrations, API on :8080, Vite on :5173 |
 | `task new:slice FEATURE=<f> NAME=<n>` | scaffold a slice (endpoint answering 501, `queries.sql`, test) and regenerate code |
+| `task rename MODULE=<m> NAME=<n>` | rename the template: Go module path, web package (`<last segment>-web`) and display name (`<n>`, `<n> API`), then regenerate code; `.specs/` is left as history |
 | `task gen` | regenerate sqlc code, `app/openapi.json` and `web/src/api/schema.d.ts` |
 | `task check` | the gate: format, lint, generated-code drift, archtest, Go tests, web typecheck/lint/tests |
 | `task e2e` | Playwright against the built binary |

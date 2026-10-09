@@ -136,6 +136,15 @@ tasks:
       - go run ./cmd/newslice --feature "{{.FEATURE}}" --name "{{.NAME}}"
       - task: gen
 
+  rename:
+    desc: "Rename the project: task rename MODULE=github.com/acme/foo NAME=Foo"
+    requires:
+      vars: [MODULE, NAME]
+    dir: app
+    cmds:
+      - go run ./cmd/rename --root .. --module {{shellQuote .MODULE}} --name {{shellQuote .NAME}}
+      - task: gen
+
   db:up:
     desc: Start Postgres in Docker and wait until it is healthy.
     cmds:
