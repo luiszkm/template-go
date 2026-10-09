@@ -18,7 +18,7 @@ export function Field({
         {...input}
       />
       {error && (
-        <p id={`${id}-error`} className="text-sm text-red-700">
+        <p id={`${id}-error`} className="text-sm text-destructive">
           {error}
         </p>
       )}

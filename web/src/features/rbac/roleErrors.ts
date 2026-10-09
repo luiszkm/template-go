@@ -1,5 +1,5 @@
+import { ApiError } from "@/api/result";
 import { type FieldErrors, fieldErrors } from "@/lib/problems";
-import { ApiError } from "@/lib/session";
 import { nameInUse } from "./copy";
 
 export function roleErrors(error: Error): FieldErrors {

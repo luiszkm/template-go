@@ -1,22 +1,11 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
-import { api } from "@/api/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { meQuery } from "@/lib/session";
-
-type Credentials = { email: string; password: string };
-
-class SignInRefused extends Error {
-  constructor(
-    readonly status: number,
-    readonly retryAfterSeconds: number,
-  ) {
-    super(`sign in answered ${status}`);
-  }
-}
+import { SignInRefused, useSignIn } from "./api";
 
 function safeRedirect(redirect: string | undefined) {
   return redirect?.startsWith("/") && !redirect.startsWith("//") ? redirect : "/";
@@ -35,59 +24,54 @@ export function LoginPage({ redirect }: { redirect?: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  const signIn = useMutation({
-    mutationFn: async (credentials: Credentials) => {
-      const { response } = await api.POST("/api/v1/users/session", { body: credentials });
-      if (response.status !== 204) {
-        throw new SignInRefused(response.status, Number(response.headers.get("Retry-After") ?? 0));
-      }
-    },
-    onSuccess: async () => {
-      queryClient.removeQueries({ queryKey: meQuery.queryKey });
-      router.history.push(safeRedirect(redirect));
-    },
-  });
+  const signIn = useSignIn();
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    signIn.mutate({ email, password });
+    signIn.mutate({ email, password }, { onSuccess: () => router.history.push(safeRedirect(redirect)) });
   }
 
   return (
-    <form onSubmit={submit} className="mx-auto max-w-sm space-y-4">
-      <h1 className="text-2xl font-semibold">Entrar</h1>
-      <div className="space-y-1">
-        <Label htmlFor="email">E-mail</Label>
-        <Input
-          id="email"
-          type="email"
-          autoComplete="username"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-      </div>
-      <div className="space-y-1">
-        <Label htmlFor="password">Senha</Label>
-        <Input
-          id="password"
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-      </div>
-      {signIn.error && (
-        <p role="alert" className="text-sm text-red-700">
-          {refusalMessage(signIn.error)}
-        </p>
-      )}
-      <Button type="submit" disabled={signIn.isPending} className="w-full">
-        {signIn.isPending ? "Entrando…" : "Entrar"}
-      </Button>
-    </form>
+    <Card className="mx-auto mt-16 max-w-sm">
+      <CardHeader>
+        <CardTitle>
+          <h1 className="text-2xl font-semibold">Entrar</h1>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={submit} className="space-y-4">
+          <div className="space-y-1">
+            <Label htmlFor="email">E-mail</Label>
+            <Input
+              id="email"
+              type="email"
+              autoComplete="username"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="password">Senha</Label>
+            <Input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          {signIn.error && (
+            <Alert variant="destructive">
+              <AlertDescription>{refusalMessage(signIn.error)}</AlertDescription>
+            </Alert>
+          )}
+          <Button type="submit" disabled={signIn.isPending} className="w-full">
+            {signIn.isPending ? "Entrando…" : "Entrar"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

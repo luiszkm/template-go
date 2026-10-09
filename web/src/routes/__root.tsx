@@ -3,7 +3,7 @@ import { createRootRouteWithContext, Link, Outlet } from "@tanstack/react-router
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   component: () => (
-    <main className="mx-auto max-w-3xl p-6">
+    <main className="mx-auto max-w-5xl p-6">
       <Outlet />
     </main>
   ),

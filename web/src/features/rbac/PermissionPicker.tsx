@@ -47,7 +47,7 @@ export function PermissionPicker({
         </div>
       ))}
       {error && (
-        <p id="permissions-error" className="text-sm text-red-700">
+        <p id="permissions-error" className="text-sm text-destructive">
           {error}
         </p>
       )}

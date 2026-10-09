@@ -1,14 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
+import { ApiError } from "@/api/result";
+import { LoadError, Loading } from "@/components/States";
 import { forbidden } from "@/lib/problems";
-import { ApiError, can, useMe } from "@/lib/session";
-import { actorLabel, eventQuery, formatWhen, loadFailed } from "./api";
+import { can, useMe } from "@/lib/session";
+import { eventQuery } from "./api";
+import { loadFailed } from "./copy";
+import { actorLabel, formatWhen } from "./format";
 
 function Json({ title, value }: { title: string; value: unknown }) {
   return (
     <section className="min-w-0 flex-1 space-y-1">
       <h2 className="text-sm font-semibold">{title}</h2>
-      <pre className="overflow-auto rounded-md bg-neutral-100 p-3 text-xs">
+      <pre className="overflow-auto rounded-md bg-muted p-3 text-xs">
         {value === null || value === undefined ? "—" : JSON.stringify(value, null, 2)}
       </pre>
     </section>
@@ -23,21 +26,10 @@ export function AuditDetail({ id }: { id: number }) {
   if (!allowed || (event.error instanceof ApiError && event.error.status === 403)) return <p>{forbidden}</p>;
   if (event.error instanceof ApiError && event.error.status === 404) return <p>Evento não encontrado.</p>;
   if (event.isPending) {
-    return (
-      <p role="status" className="text-neutral-600">
-        Carregando…
-      </p>
-    );
+    return <Loading />;
   }
   if (event.isError) {
-    return (
-      <div className="space-y-2">
-        <p>{loadFailed}</p>
-        <Button variant="outline" onClick={() => event.refetch()}>
-          Tentar novamente
-        </Button>
-      </div>
-    );
+    return <LoadError message={loadFailed} retry={() => event.refetch()} />;
   }
 
   const e = event.data;

@@ -11,13 +11,28 @@ function files(dir: string): string[] {
   });
 }
 
+const importsClient = /from\s+["'][@./]*\/?api\/client["']/;
+const clientConsumers = [/^api\//, /^lib\/[^/]+\.ts$/, /^features\/[^/]+\/api\.ts$/, /^App\.tsx$/];
+
+function sources() {
+  return files(SRC)
+    .filter((f) => /\.(ts|tsx)$/.test(f) && !/\.test\.tsx?$/.test(f))
+    .map((f) => relative(SRC, f));
+}
+
 describe("backend access", () => {
   it("only generated client calls the backend", () => {
-    const offenders = files(SRC)
-      .filter((f) => /\.(ts|tsx)$/.test(f) && !/\.test\.tsx?$/.test(f))
-      .map((f) => relative(SRC, f))
+    const offenders = sources()
       .filter((f) => !f.startsWith(`api${sep}`) && !f.startsWith(`test${sep}`))
       .filter((f) => forbidden.some((re) => re.test(readFileSync(join(SRC, f), "utf8"))));
+    expect(offenders).toEqual([]);
+  });
+
+  it("only api modules use the client, so components go through queries and hooks", () => {
+    const offenders = sources()
+      .map((f) => f.split(sep).join("/"))
+      .filter((f) => importsClient.test(readFileSync(join(SRC, f), "utf8")))
+      .filter((f) => !clientConsumers.some((re) => re.test(f)));
     expect(offenders).toEqual([]);
   });
 });

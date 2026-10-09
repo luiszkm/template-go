@@ -1,8 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useEffect, useState } from "react";
-import { api } from "@/api/client";
+import { ApiError } from "@/api/result";
 import { Field } from "@/components/Field";
+import { LoadError, Loading } from "@/components/States";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,12 +14,19 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { type FieldErrors, forbidden } from "@/lib/problems";
-import { ApiError, can, useMe } from "@/lib/session";
-import { adminRole, permissionsQuery, type Role, type RoleChanges, roleQuery } from "./api";
-import { adminLocked, notFound } from "./copy";
+import { can, useMe } from "@/lib/session";
+import {
+  adminRole,
+  permissionsQuery,
+  type Role,
+  type RoleChanges,
+  roleQuery,
+  useDeleteRole,
+  useUpdateRole,
+} from "./api";
+import { adminLocked, loadFailed, notFound } from "./copy";
 import { PermissionPicker } from "./PermissionPicker";
 import { roleErrors } from "./roleErrors";
-import { LoadError, Loading } from "./States";
 
 function sameSet(a: string[], b: string[]) {
   return [...a].sort().join("\n") === [...b].sort().join("\n");
@@ -36,7 +44,6 @@ export function RoleDetail({ id }: { id: string }) {
   const allowed = can(me, "rbac:read");
   const role = useQuery({ ...roleQuery(id), enabled: allowed });
   const catalogue = useQuery({ ...permissionsQuery, enabled: allowed });
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [permissions, setPermissions] = useState<string[]>([]);
@@ -50,32 +57,8 @@ export function RoleDetail({ id }: { id: string }) {
     }
   }, [role.data]);
 
-  const save = useMutation({
-    mutationFn: async (changes: RoleChanges) => {
-      const { data, error, response } = await api.PATCH("/api/v1/rbac/roles/{id}", {
-        params: { path: { id } },
-        body: changes,
-      });
-      if (!data) throw new ApiError(response.status, error);
-      return data;
-    },
-    onSuccess: (updated) => {
-      queryClient.setQueryData(roleQuery(id).queryKey, updated);
-      setSaved(true);
-    },
-    onError: (error) => setErrors(roleErrors(error)),
-  });
-
-  const remove = useMutation({
-    mutationFn: async () => {
-      const { error, response } = await api.DELETE("/api/v1/rbac/roles/{id}", { params: { path: { id } } });
-      if (response.status !== 204) throw new ApiError(response.status, error);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["roles"] });
-      await navigate({ to: "/roles" });
-    },
-  });
+  const save = useUpdateRole(id);
+  const remove = useDeleteRole(id);
 
   const failure = role.error ?? catalogue.error;
   if (!allowed || (failure instanceof ApiError && failure.status === 403)) return <p>{forbidden}</p>;
@@ -84,6 +67,7 @@ export function RoleDetail({ id }: { id: string }) {
   if (role.isError || catalogue.isError) {
     return (
       <LoadError
+        message={loadFailed}
         retry={() => {
           role.refetch();
           catalogue.refetch();
@@ -101,7 +85,11 @@ export function RoleDetail({ id }: { id: string }) {
     setErrors({});
     setSaved(false);
     const changes = changedFields(current, name, permissions);
-    if (Object.keys(changes).length > 0) save.mutate(changes);
+    if (Object.keys(changes).length === 0) return;
+    save.mutate(changes, {
+      onSuccess: () => setSaved(true),
+      onError: (error) => setErrors(roleErrors(error)),
+    });
   }
 
   return (
@@ -140,7 +128,12 @@ export function RoleDetail({ id }: { id: string }) {
         )}
         {saved && <p role="status">Alterações salvas.</p>}
       </form>
-      {!locked && can(me, "rbac:delete") && <DeleteRole role={current} onConfirm={() => remove.mutate()} />}
+      {!locked && can(me, "rbac:delete") && (
+        <DeleteRole
+          role={current}
+          onConfirm={() => remove.mutate(undefined, { onSuccess: () => navigate({ to: "/roles" }) })}
+        />
+      )}
     </div>
   );
 }

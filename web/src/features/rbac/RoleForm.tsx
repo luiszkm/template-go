@@ -1,49 +1,44 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
-import { api } from "@/api/client";
+import { ApiError } from "@/api/result";
 import { Field } from "@/components/Field";
+import { LoadError, Loading } from "@/components/States";
 import { Button } from "@/components/ui/button";
 import { type FieldErrors, forbidden } from "@/lib/problems";
-import { ApiError, can, useMe } from "@/lib/session";
-import { type NewRole, permissionsQuery } from "./api";
+import { can, useMe } from "@/lib/session";
+import { permissionsQuery, useCreateRole } from "./api";
+import { loadFailed } from "./copy";
 import { PermissionPicker } from "./PermissionPicker";
 import { roleErrors } from "./roleErrors";
-import { LoadError, Loading } from "./States";
 
 export function RoleForm() {
   const { data: me } = useMe();
   const allowed = can(me, "rbac:read") && can(me, "rbac:create");
   const catalogue = useQuery({ ...permissionsQuery, enabled: allowed });
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [permissions, setPermissions] = useState<string[]>([]);
   const [errors, setErrors] = useState<FieldErrors>({});
 
-  const create = useMutation({
-    mutationFn: async (role: NewRole) => {
-      const { data, error, response } = await api.POST("/api/v1/rbac/roles", { body: role });
-      if (!data) throw new ApiError(response.status, error);
-      return data;
-    },
-    onSuccess: async (created) => {
-      await queryClient.invalidateQueries({ queryKey: ["roles"] });
-      await navigate({ to: "/roles/$id", params: { id: created.id } });
-    },
-    onError: (error) => setErrors(roleErrors(error)),
-  });
+  const create = useCreateRole();
 
   if (!allowed || (catalogue.error instanceof ApiError && catalogue.error.status === 403)) {
     return <p>{forbidden}</p>;
   }
   if (catalogue.isPending) return <Loading />;
-  if (catalogue.isError) return <LoadError retry={() => catalogue.refetch()} />;
+  if (catalogue.isError) return <LoadError message={loadFailed} retry={() => catalogue.refetch()} />;
 
   function submit(event: FormEvent) {
     event.preventDefault();
     setErrors({});
-    create.mutate({ name, permissions });
+    create.mutate(
+      { name, permissions },
+      {
+        onSuccess: (created) => navigate({ to: "/roles/$id", params: { id: created.id } }),
+        onError: (error) => setErrors(roleErrors(error)),
+      },
+    );
   }
 
   return (

@@ -1,31 +1,43 @@
-import { useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { api } from "@/api/client";
+import { Link, type LinkProps, useNavigate } from "@tanstack/react-router";
+import type { ReactNode } from "react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { can, meQuery, useMe } from "@/lib/session";
+import { can, useMe } from "@/lib/session";
+import { useSignOut } from "./api";
+
+function NavLink({ to, children }: { to: LinkProps["to"]; children: ReactNode }) {
+  return (
+    <Button variant="ghost" size="sm" asChild>
+      <Link to={to} activeOptions={{ exact: to === "/" }} activeProps={{ className: "bg-accent" }}>
+        {children}
+      </Link>
+    </Button>
+  );
+}
 
 export function UserMenu() {
   const { data: me } = useMe();
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
-
-  async function signOut() {
-    await api.DELETE("/api/v1/users/session");
-    queryClient.removeQueries({ queryKey: meQuery.queryKey });
-    await navigate({ to: "/login" });
-  }
+  const signOut = useSignOut();
 
   return (
-    <nav className="flex items-center gap-4 border-b border-neutral-200 pb-3 text-sm">
-      <Link to="/">Início</Link>
-      {can(me, "users:read") && <Link to="/users">Usuários</Link>}
-      {can(me, "rbac:read") && <Link to="/roles">Papéis</Link>}
-      {can(me, "audit:read") && <Link to="/audit">Auditoria</Link>}
-      <Link to="/account/password">Minha senha</Link>
-      <span className="ml-auto text-neutral-600">{me?.email}</span>
-      <Button variant="outline" size="sm" onClick={signOut}>
+    <header className="flex flex-wrap items-center gap-1 border-b pb-3 text-sm">
+      <nav className="flex flex-wrap items-center gap-1">
+        <NavLink to="/">Início</NavLink>
+        {can(me, "users:read") && <NavLink to="/users">Usuários</NavLink>}
+        {can(me, "rbac:read") && <NavLink to="/roles">Papéis</NavLink>}
+        {can(me, "audit:read") && <NavLink to="/audit">Auditoria</NavLink>}
+        <NavLink to="/account/password">Minha senha</NavLink>
+      </nav>
+      <span className="ml-auto px-2 text-muted-foreground">{me?.email}</span>
+      <ThemeToggle />
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => signOut.mutate(undefined, { onSettled: () => navigate({ to: "/login" }) })}
+      >
         Sair
       </Button>
-    </nav>
+    </header>
   );
 }

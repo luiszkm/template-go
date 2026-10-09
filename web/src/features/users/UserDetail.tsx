@@ -1,9 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { type FormEvent, useEffect, useState } from "react";
-import { api } from "@/api/client";
-import type { components } from "@/api/schema";
+import { ApiError } from "@/api/result";
 import { Field } from "@/components/Field";
+import { LoadError, Loading } from "@/components/States";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,14 +15,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { type FieldErrors, fieldErrors, forbidden } from "@/lib/problems";
-import { ApiError, can, useMe } from "@/lib/session";
+import { can, useMe } from "@/lib/session";
+import { type User, userQuery } from "@/lib/user";
+import { type UserChanges, useSetUserActive, useUpdateUser } from "./api";
 import { emailInUse } from "./copy";
 
-type User = components["schemas"]["UserDetail"];
-type Changes = components["schemas"]["UserChanges"];
-
-function changedFields(user: User, email: string, name: string): Changes {
-  const changes: Changes = {};
+function changedFields(user: User, email: string, name: string): UserChanges {
+  const changes: UserChanges = {};
   if (email !== user.email) changes.email = email;
   if (name !== user.name) changes.name = name;
   return changes;
@@ -29,17 +29,7 @@ function changedFields(user: User, email: string, name: string): Changes {
 
 export function UserDetail({ id }: { id: string }) {
   const { data: me } = useMe();
-  const queryClient = useQueryClient();
-  const queryKey = ["user", id];
-  const user = useQuery({
-    queryKey,
-    enabled: can(me, "users:read"),
-    queryFn: async () => {
-      const { data, error, response } = await api.GET("/api/v1/users/{id}", { params: { path: { id } } });
-      if (!data) throw new ApiError(response.status, error);
-      return data;
-    },
-  });
+  const user = useQuery({ ...userQuery(id), enabled: can(me, "users:read") });
 
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
@@ -53,55 +43,18 @@ export function UserDetail({ id }: { id: string }) {
     }
   }, [user.data]);
 
-  const save = useMutation({
-    mutationFn: async (changes: Changes) => {
-      const { data, error, response } = await api.PATCH("/api/v1/users/{id}", {
-        params: { path: { id } },
-        body: changes,
-      });
-      if (!data) throw new ApiError(response.status, error);
-      return data;
-    },
-    onSuccess: (updated) => {
-      queryClient.setQueryData(queryKey, updated);
-      setSaved(true);
-    },
-    onError: (error) => {
-      if (!(error instanceof ApiError)) return;
-      if (error.status === 409) setErrors({ email: emailInUse });
-      if (error.status === 422) setErrors(fieldErrors(error.problem));
-    },
-  });
-
-  const setActive = useMutation({
-    mutationFn: async (active: boolean) => {
-      const path = active ? "/api/v1/users/{id}/activate" : "/api/v1/users/{id}/deactivate";
-      const { error, response } = await api.POST(path, { params: { path: { id } } });
-      if (response.status !== 204) throw new ApiError(response.status, error);
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey }),
-  });
+  const save = useUpdateUser(id);
+  const setActive = useSetUserActive(id);
 
   if (!can(me, "users:read") || (user.error instanceof ApiError && user.error.status === 403)) {
     return <p>{forbidden}</p>;
   }
   if (user.error instanceof ApiError && user.error.status === 404) return <p>Usuário não encontrado.</p>;
   if (user.isPending) {
-    return (
-      <p role="status" className="text-neutral-600">
-        Carregando…
-      </p>
-    );
+    return <Loading />;
   }
   if (user.isError) {
-    return (
-      <div className="space-y-2">
-        <p>Não foi possível carregar os usuários.</p>
-        <Button variant="outline" onClick={() => user.refetch()}>
-          Tentar novamente
-        </Button>
-      </div>
-    );
+    return <LoadError message="Não foi possível carregar os usuários." retry={() => user.refetch()} />;
   }
 
   const current = user.data;
@@ -112,14 +65,24 @@ export function UserDetail({ id }: { id: string }) {
     setErrors({});
     setSaved(false);
     const changes = changedFields(current, email, name);
-    if (Object.keys(changes).length > 0) save.mutate(changes);
+    if (Object.keys(changes).length === 0) return;
+    save.mutate(changes, {
+      onSuccess: () => setSaved(true),
+      onError: (error) => {
+        if (!(error instanceof ApiError)) return;
+        if (error.status === 409) setErrors({ email: emailInUse });
+        if (error.status === 422) setErrors(fieldErrors(error.problem));
+      },
+    });
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <h1 className="text-2xl font-semibold">{current.email}</h1>
-        <span className="text-sm text-neutral-600">{current.active ? "Ativo" : "Desativado"}</span>
+        <Badge variant={current.active ? "secondary" : "outline"}>
+          {current.active ? "Ativo" : "Desativado"}
+        </Badge>
       </div>
       {can(me, "audit:read") && (
         <div className="flex gap-4 text-sm">

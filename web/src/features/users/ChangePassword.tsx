@@ -1,10 +1,9 @@
-import { useMutation } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
-import { api } from "@/api/client";
+import { ApiError } from "@/api/result";
 import { Field } from "@/components/Field";
 import { Button } from "@/components/ui/button";
 import { type FieldErrors, fieldErrors } from "@/lib/problems";
-import { ApiError } from "@/lib/session";
+import { useChangePassword } from "./api";
 
 export function ChangePassword() {
   const [current, setCurrent] = useState("");
@@ -12,17 +11,7 @@ export function ChangePassword() {
   const [confirmation, setConfirmation] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
 
-  const change = useMutation({
-    mutationFn: async () => {
-      const { error, response } = await api.PUT("/api/v1/users/me/password", {
-        body: { current_password: current, new_password: next },
-      });
-      if (response.status !== 204) throw new ApiError(response.status, error);
-    },
-    onError: (error) => {
-      if (error instanceof ApiError && error.status === 422) setErrors(fieldErrors(error.problem));
-    },
-  });
+  const change = useChangePassword();
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -31,7 +20,14 @@ export function ChangePassword() {
       return;
     }
     setErrors({});
-    change.mutate();
+    change.mutate(
+      { current_password: current, new_password: next },
+      {
+        onError: (error) => {
+          if (error instanceof ApiError && error.status === 422) setErrors(fieldErrors(error.problem));
+        },
+      },
+    );
   }
 
   return (

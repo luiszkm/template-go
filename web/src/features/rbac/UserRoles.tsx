@@ -1,6 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { api } from "@/api/client";
+import { ApiError } from "@/api/result";
+import { Loading } from "@/components/States";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,10 +11,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ApiError, can, useMe } from "@/lib/session";
-import { rolesQuery, userRolesQuery } from "./api";
+import { can, useMe } from "@/lib/session";
+import { userQuery } from "@/lib/user";
+import { rolesQuery, useAssignRoles, userRolesQuery } from "./api";
 import { lastAdmin, loadFailed } from "./copy";
-import { Loading } from "./States";
 
 export function UserRoles({ id }: { id: string }) {
   const { data: me } = useMe();
@@ -24,16 +25,8 @@ export function UserRoles({ id }: { id: string }) {
 function UserRolesSection({ id, canAssign }: { id: string; canAssign: boolean }) {
   const roles = useQuery(rolesQuery);
   const held = useQuery(userRolesQuery(id));
-  const user = useQuery({
-    queryKey: ["user", id],
-    queryFn: async () => {
-      const { data, error, response } = await api.GET("/api/v1/users/{id}", { params: { path: { id } } });
-      if (!data) throw new ApiError(response.status, error);
-      return data;
-    },
-  });
+  const user = useQuery(userQuery(id));
   const email = user.data?.email ?? "";
-  const queryClient = useQueryClient();
   const [checked, setChecked] = useState<string[]>([]);
   const [outcome, setOutcome] = useState<string>();
 
@@ -41,23 +34,7 @@ function UserRolesSection({ id, canAssign }: { id: string; canAssign: boolean })
     if (held.data) setChecked(held.data.map((r) => r.id));
   }, [held.data]);
 
-  const assign = useMutation({
-    mutationFn: async (roleIds: string[]) => {
-      const { error, response } = await api.PUT("/api/v1/rbac/users/{id}/roles", {
-        params: { path: { id } },
-        body: { role_ids: roleIds },
-      });
-      if (response.status !== 204) throw new ApiError(response.status, error);
-    },
-    onSuccess: async () => {
-      setOutcome("Papéis atualizados.");
-      await queryClient.invalidateQueries({ queryKey: userRolesQuery(id).queryKey });
-      await queryClient.invalidateQueries({ queryKey: rolesQuery.queryKey });
-    },
-    onError: (error) => {
-      if (error instanceof ApiError && error.status === 409) setOutcome(lastAdmin);
-    },
-  });
+  const assign = useAssignRoles(id);
 
   function toggle(roleId: string) {
     setOutcome(undefined);
@@ -104,7 +81,18 @@ function UserRolesSection({ id, canAssign }: { id: string; canAssign: boolean })
                     <Button variant="outline">Cancelar</Button>
                   </DialogClose>
                   <DialogClose asChild>
-                    <Button onClick={() => assign.mutate(checked)}>Confirmar</Button>
+                    <Button
+                      onClick={() =>
+                        assign.mutate(checked, {
+                          onSuccess: () => setOutcome("Papéis atualizados."),
+                          onError: (error) => {
+                            if (error instanceof ApiError && error.status === 409) setOutcome(lastAdmin);
+                          },
+                        })
+                      }
+                    >
+                      Confirmar
+                    </Button>
                   </DialogClose>
                 </div>
               </DialogContent>

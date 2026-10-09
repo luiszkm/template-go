@@ -1,11 +1,11 @@
-import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
-import { api } from "@/api/client";
+import { ApiError } from "@/api/result";
 import { Field } from "@/components/Field";
 import { Button } from "@/components/ui/button";
 import { type FieldErrors, fieldErrors, forbidden } from "@/lib/problems";
-import { ApiError, can, useMe } from "@/lib/session";
+import { can, useMe } from "@/lib/session";
+import { useCreateUser } from "./api";
 import { emailInUse } from "./copy";
 
 export function UserForm() {
@@ -16,26 +16,24 @@ export function UserForm() {
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
 
-  const create = useMutation({
-    mutationFn: async () => {
-      const { data, error, response } = await api.POST("/api/v1/users", { body: { email, name, password } });
-      if (!data) throw new ApiError(response.status, error);
-      return data;
-    },
-    onSuccess: (user) => navigate({ to: "/users/$id", params: { id: user.id } }),
-    onError: (error) => {
-      if (!(error instanceof ApiError)) return;
-      if (error.status === 409) setErrors({ email: emailInUse });
-      if (error.status === 422) setErrors(fieldErrors(error.problem));
-    },
-  });
+  const create = useCreateUser();
 
   if (!can(me, "users:create")) return <p>{forbidden}</p>;
 
   function submit(event: FormEvent) {
     event.preventDefault();
     setErrors({});
-    create.mutate();
+    create.mutate(
+      { email, name, password },
+      {
+        onSuccess: (user) => navigate({ to: "/users/$id", params: { id: user.id } }),
+        onError: (error) => {
+          if (!(error instanceof ApiError)) return;
+          if (error.status === 409) setErrors({ email: emailInUse });
+          if (error.status === 422) setErrors(fieldErrors(error.problem));
+        },
+      },
+    );
   }
 
   return (

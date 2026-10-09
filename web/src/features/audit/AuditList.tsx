@@ -1,12 +1,16 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { ApiError } from "@/api/result";
+import { LoadError, Loading } from "@/components/States";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { forbidden } from "@/lib/problems";
-import { ApiError, can, useMe } from "@/lib/session";
-import { type AuditFilters, actionsQuery, actorLabel, fetchEvents, formatWhen, loadFailed } from "./api";
+import { can, useMe } from "@/lib/session";
+import { type AuditFilters, actionsQuery, fetchEvents } from "./api";
+import { loadFailed } from "./copy";
+import { actorLabel, formatWhen } from "./format";
 
 export function AuditList({
   filters,
@@ -43,7 +47,7 @@ export function AuditList({
           <Label htmlFor="action">Ação</Label>
           <select
             id="action"
-            className="h-9 rounded-md border border-neutral-300 px-2 text-sm"
+            className="h-9 rounded-md border border-input bg-transparent px-2 text-sm"
             value={filters.action ?? ""}
             onChange={(e) => change({ ...filters, action: e.target.value })}
           >
@@ -94,21 +98,10 @@ function Events({
   onFilter: (filters: AuditFilters) => void;
 }) {
   if (events.isPending) {
-    return (
-      <p role="status" className="text-neutral-600">
-        Carregando…
-      </p>
-    );
+    return <Loading />;
   }
   if (events.isError) {
-    return (
-      <div className="space-y-2">
-        <p>{loadFailed}</p>
-        <Button variant="outline" onClick={() => events.refetch()}>
-          Tentar novamente
-        </Button>
-      </div>
-    );
+    return <LoadError message={loadFailed} retry={() => events.refetch()} />;
   }
   const items = events.data.pages.flatMap((p) => p.items ?? []);
   if (items.length === 0) return <p>Nenhum evento encontrado.</p>;
