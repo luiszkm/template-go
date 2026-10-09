@@ -77,9 +77,9 @@ do papel o link `Ver auditoria`, cada um abrindo `/audit` já filtrado.
 
 | ID | Slice | Criteria | Status |
 | --- | --- | --- | --- |
-| AUDL-01 | S1 | 1, 2, 3, 4 | Implementing |
-| AUDL-02 | S2 | 5, 6, 7 | Implementing |
-| AUDL-03 | S3 | 8, 9 | Implementing |
+| AUDL-01 | S1 | 1, 2, 3, 4 | Verified |
+| AUDL-02 | S2 | 5, 6, 7 | Verified |
+| AUDL-03 | S3 | 8, 9 | Verified |
 
 ## Observable
 

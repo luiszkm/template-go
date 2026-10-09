@@ -1,18 +1,25 @@
 # Audit links verification
 
-**Verdict**: FAIL
+**Verdict**: PASS
 **Profile**: standard
-**Diff range**: 5d54186..b3cd52f
-**Round**: 1 - full
-**Verifier**: independent sub-agent (author != verifier) - sub-agente independente, sem contexto do build
+**Diff range**: 5d54186..46c42a6 (fix desta rodada: b3cd52f..46c42a6)
+**Round**: 2 - scoped
+**Verifier**: independent sub-agent (author != verifier) - sub-agente independente, sem contexto do build nem do fix
 
-Todas as 10 checks têm prova verde em `HEAD` com asserção localizada, as 4 linhas de `Coverage` recompostas não
-deixam membro sem prova e as 5 falhas injetadas foram mortas. O FAIL vem de uma única linha de `Test policy` não
-atendida: `RoleDetail` foi classificado como "Decides, reached across a boundary", mas a prova na fronteira é
-declarada "por analogia ao C9" e não existe - nenhum teste segue `Ver auditoria` a partir de `/roles/<id>`. É
-exatamente a lição confirmada L-008 (estado aplicado a uma segunda tela tem de ser provado nela).
+A única lacuna da rodada 1 (linha de `Test policy` "Decides, reached across a boundary" sem prova na fronteira para
+`RoleDetail.tsx`) está fechada pela nova check C11, um teste Playwright que cria um papel, segue `Ver auditoria`
+a partir de `/roles/<id>` e afirma a URL e a tabela de `/audit` contra a API real. As 11 provas passam em `46c42a6`
+e as duas falhas injetadas sobre a superfície nova de C11 foram mortas.
+
+Escopo desta rodada: `git diff --stat b3cd52f..HEAD` toca apenas `.specs/features/audit-links/checks.md`,
+`.specs/features/audit-links/verification.md` e `web/e2e/audit-links.spec.ts` (+21 linhas, só o teste novo).
+Nenhum código de produção mudou, então `UserDetail.tsx`, `RoleDetail.tsx` e seus testes Vitest são os mesmos de
+`b3cd52f`. O que não foi tocado pelo fix vem da rodada 1 e está marcado `carried from b3cd52f`; todas as provas
+foram reexecutadas em `46c42a6`.
 
 ## Binding sources
+
+carried from b3cd52f - o fix não tocou a interface.
 
 | Source | Opened | Contradiction | Uncovered |
 | --- | --- | --- | --- |
@@ -20,87 +27,100 @@ exatamente a lição confirmada L-008 (estado aplicado a uma segunda tela tem de
 
 ## Checks
 
-Provas executadas em `b3cd52f`, em lote:
+verified at 46c42a6 - provas reexecutadas em lote:
 
-- Vitest: `npm --prefix web run test -- src/features/users/UserDetail.test.tsx src/features/rbac/RoleDetail.test.tsx --reporter=verbose` - exit 0, 35 passed (2 arquivos); cada teste nomeado abaixo aparece individualmente com `✓`.
-- Playwright: `task e2e -- audit-links.spec.ts` - exit 0, `2 passed (3.2m)`; binário construído do zero (porta 8080 livre antes da execução, sem reaproveitar servidor).
+- Vitest: `npm --prefix web run test -- src/features/users/UserDetail.test.tsx src/features/rbac/RoleDetail.test.tsx --reporter=verbose` - exit 0, `Test Files 2 passed (2)`, `Tests 35 passed (35)`; cada teste nomeado abaixo aparece individualmente com `✓`.
+- Playwright: `task e2e -- audit-links.spec.ts --reporter=list` - exit 0, `3 passed`; linhas `✓ 1 ... audit-links.spec.ts:15:1 › admin follows Ver auditoria from a user`, `✓ 2 ... :37:1 › admin follows Ver ações on self`, `✓ 3 ... :51:1 › admin follows Ver auditoria from a role`. Porta 8080 livre antes da execução (`netstat` sem `LISTEN`), então o binário foi construído e servido pelo próprio `webServer`.
+
+Citações de C1-C10: os arquivos de teste não mudaram no fix (`web/e2e/audit-links.spec.ts` só recebeu linhas após a `:49`), então os `file:line` da rodada 1 continuam válidos e foram reconferidos na leitura do arquivo em `HEAD`.
 
 | Check | Claim | Proof run | Evidence | Result |
 | --- | --- | --- | --- | --- |
 | C1 | `Ver auditoria` com `href` `/audit?resource_type=user&resource_id=<id>` | Vitest lote, `✓ links to the audit trail of the user` | `web/src/features/users/UserDetail.test.tsx:134` - `expect(link).toHaveAttribute("href", \`/audit?resource_type=user&resource_id=${id}\`)` | PASS |
 | C2 | `Ver ações` com `href` `/audit?actor_id=<id>` | Vitest lote, `✓ links to the actions of the user` | `web/src/features/users/UserDetail.test.tsx:141` - `expect(link).toHaveAttribute("href", \`/audit?actor_id=${id}\`)` | PASS |
 | C3 | sem `audit:read`: nenhum link, título e `Salvar` presentes | Vitest lote, `✓ hides audit links without audit:read` | `web/src/features/users/UserDetail.test.tsx:147-150` - `findByRole("heading", { name: "b@x.com" })`, `getByRole("button", { name: "Salvar" })`, `queryByRole("link", { name: "Ver auditoria" })).not.toBeInTheDocument()`, idem `Ver ações` | PASS |
-| C4 | pendente, `404`, `403`, `500`: nenhum link, após o texto do estado | Vitest lote, `✓ hides audit links while pending` / `while not found` / `while forbidden` / `while failed` | `web/src/features/users/UserDetail.test.tsx:161-163` - `expect(await screen.findByText(text))` seguido de `queryByRole("link", ...)).not.toBeInTheDocument()` para os dois links; tabela de casos em `:153-157` | PASS |
+| C4 | pendente, `404`, `403`, `500`: nenhum link, após o texto do estado | Vitest lote, `✓ hides audit links while pending` / `while not found` / `while forbidden` / `while failed` | `web/src/features/users/UserDetail.test.tsx:161-163` - `expect(await screen.findByText(text))` seguido de `queryByRole("link", ...)).not.toBeInTheDocument()` para os dois links; casos em `:153-157` | PASS |
 | C5 | `Ver auditoria` com `href` `/audit?resource_type=role&resource_id=<id>` | Vitest lote, `✓ links to the audit trail of the role` | `web/src/features/rbac/RoleDetail.test.tsx:193` - `expect(link).toHaveAttribute("href", \`/audit?resource_type=role&resource_id=${id}\`)` | PASS |
 | C6 | sem `audit:read`: sem link, nome no título e `Salvar` presentes | Vitest lote, `✓ hides audit link without audit:read` | `web/src/features/rbac/RoleDetail.test.tsx:211-213` - `findByRole("heading", { name: "Leitor" })`, `getByRole("button", { name: "Salvar" })`, `queryByRole("link", { name: "Ver auditoria" })).not.toBeInTheDocument()` | PASS |
 | C7 | pendente, `404`, `403`, `500`: sem link, após o texto do estado | Vitest lote, `✓ hides audit link while pending` / `while not found` / `while forbidden` / `while failed` | `web/src/features/rbac/RoleDetail.test.tsx:228-229` - `expect(await screen.findByText(text))` seguido de `queryByRole("link", { name: "Ver auditoria" })).not.toBeInTheDocument()`; casos em `:216-220` | PASS |
 | C8 | papel `admin` travado mostra `Ver auditoria` com o próprio id | Vitest lote, `✓ links to the audit trail of the admin role` | `web/src/features/rbac/RoleDetail.test.tsx:205` - `expect(link).toHaveAttribute("href", \`/audit?resource_type=role&resource_id=${id}\`)` (papel `name: "admin"` em `:199`) | PASS |
-| C9 | e2e: URL com `resource_type=user`/`resource_id`, exatamente um `user.created`, toda linha `Recurso` `user <id>`, `Limpar filtros` | Playwright lote, `✓ admin follows Ver auditoria from a user (7.6s)` | `web/e2e/audit-links.spec.ts:29-34` - `search.get("resource_type")).toBe("user")`, `search.get("resource_id")).toBe(userId)`, `getByRole("button", { name: "Limpar filtros" })).toBeVisible()`, `filter({ hasText: "user.created" })).toHaveCount(1)`, `row.locator("td").nth(3)).toHaveText(\`user ${userId}\`)` | PASS |
-| C10 | e2e: URL com `actor_id=<id>`, pelo menos uma linha, toda linha `Quem` = e-mail do admin | Playwright lote, `✓ admin follows Ver ações on self (3.7s)` | `web/e2e/audit-links.spec.ts:45-48` - `searchParams.get("actor_id")).toBe(me.id)`, `eventRows(page).first()).toBeVisible()`, `row.locator("td").nth(2)).toHaveText(admin.email)` | PASS |
+| C9 | e2e: URL com `resource_type=user`/`resource_id`, exatamente um `user.created`, toda linha `Recurso` `user <id>`, `Limpar filtros` | Playwright lote, `✓ admin follows Ver auditoria from a user` | `web/e2e/audit-links.spec.ts:29-34` - `search.get("resource_type")).toBe("user")`, `search.get("resource_id")).toBe(userId)`, `getByRole("button", { name: "Limpar filtros" })).toBeVisible()`, `filter({ hasText: "user.created" })).toHaveCount(1)`, `row.locator("td").nth(3)).toHaveText(\`user ${userId}\`)` | PASS |
+| C10 | e2e: URL com `actor_id=<id>`, pelo menos uma linha, toda linha `Quem` = e-mail do admin | Playwright lote, `✓ admin follows Ver ações on self` | `web/e2e/audit-links.spec.ts:45-48` - `searchParams.get("actor_id")).toBe(me.id)`, `eventRows(page).first()).toBeVisible()`, `row.locator("td").nth(2)).toHaveText(admin.email)` | PASS |
+| C11 | e2e: admin cria papel, segue `Ver auditoria` de `/roles/<id>`; URL com `resource_type=role` e `resource_id=<id>`, exatamente um `role.created`, toda linha `Recurso` `role <id>`, `Limpar filtros` | Playwright lote, `✓ admin follows Ver auditoria from a role` (`audit-links.spec.ts:51:1`) | `web/e2e/audit-links.spec.ts:64` - `expect(search.get("resource_type")).toBe("role")`; `:65` - `expect(search.get("resource_id")).toBe(roleId)`; `:66` - `getByRole("button", { name: "Limpar filtros" })).toBeVisible()`; `:67` - `eventRows(page).filter({ hasText: "role.created" })).toHaveCount(1)`; `:69` - `row.locator("td").nth(3)).toHaveText(\`role ${roleId}\`)`. Pré-condição nomeada pela claim: papel criado pela UI em `:53-58` e o clique em `Ver auditoria` a partir de `/roles/<id>` em `:60` | PASS |
 
-Notas de leitura:
+Notas de leitura (verified at 46c42a6):
 
-- Colunas da tabela de `/audit` conferidas em `web/src/features/audit/AuditList.tsx:120-123` (`Quando`, `Ação`, `Quem`, `Recurso`): `nth(2)` é `Quem` e `nth(3)` é `Recurso`, como as claims exigem.
-- As provas tocam só arquivos do diff (`UserDetail.test.tsx`, `RoleDetail.test.tsx`, `e2e/audit-links.spec.ts`), todos alterados em `b3cd52f`.
-- Regra sem comentários (`AGENTS.md` regra 8): nenhuma linha adicionada no diff de `web/` contém `//` ou `/*` de comentário.
+- C11 segue o clique real a partir da tela do papel (`:57` exige `/roles/<uuid>` antes do clique em `:60`), então prova o link renderizado por `RoleDetail.tsx:110-117`, não uma navegação direta para `/audit`.
+- O laço de `:68-69` sobre "toda linha" não é vácuo: `:67` exige pelo menos (exatamente) uma linha `role.created` antes dele.
+- `nth(3)` é a coluna `Recurso` - carried from b3cd52f (`web/src/features/audit/AuditList.tsx:120-123`, arquivo fora do diff).
+- Regra sem comentários (`AGENTS.md` regra 8): as 21 linhas adicionadas em `web/e2e/audit-links.spec.ts` não contêm `//` nem `/*`.
+- A prova de C11 toca apenas arquivo alterado pelo fix (`web/e2e/audit-links.spec.ts`).
 
 ## Coverage
 
-Recomposto a partir do código (`UserDetail.tsx:85-133`, `RoleDetail.tsx:80-118`) e da autoridade do conjunto (as AC do plano), não da tabela do `checks.md`.
+Linha "filtros de `/audit` usados por link" verified at 46c42a6 (o fix acrescentou C11 a ela); demais linhas carried from b3cd52f - nenhum código de produção mudou, então as autoridades desses conjuntos não mudaram.
 
 | Set (size) | Recomputed from | Member -> proof | Unproven |
 | --- | --- | --- | --- |
-| links da tela de usuário (2) | `web/src/features/users/UserDetail.tsx:124-133` - dois `Link` | `Ver auditoria` C1 (`:134`) · `Ver ações` C2 (`:141`) | - |
-| ramos de visibilidade em `UserDetail` (6) | AC 1-4 + retornos antecipados em `UserDetail.tsx:85-104` | carregado com `audit:read` C1, C2 · sem `audit:read` C3 · pendente, `404`, `403`, `500` C4 (um caso cada, `:153-157`) | - |
-| ramos de visibilidade em `RoleDetail` (7) | AC 5-7 + Assumptions `Papel admin` + retornos em `RoleDetail.tsx:80-92` | carregado C5 · `admin` travado C8 · sem `audit:read` C6 · pendente, `404`, `403`, `500` C7 (`:216-220`) | - |
-| filtros de `/audit` usados por link (3) | `web/src/routes/_authed/audit/index.tsx:6-12` (`validateSearch`) | `resource_type`+`resource_id` de usuário C1, C9 · `resource_type`+`resource_id` de papel C5 · `actor_id` C2, C10 | - |
+| links da tela de usuário (2) | carried from b3cd52f - `web/src/features/users/UserDetail.tsx:124-133` | `Ver auditoria` C1 (`UserDetail.test.tsx:134`) · `Ver ações` C2 (`:141`) | - |
+| ramos de visibilidade em `UserDetail` (6) | carried from b3cd52f - AC 1-4 + retornos em `UserDetail.tsx:85-104` | carregado com `audit:read` C1, C2 · sem `audit:read` C3 · pendente, `404`, `403`, `500` C4 (`:153-157`) | - |
+| ramos de visibilidade em `RoleDetail` (7) | carried from b3cd52f - AC 5-7 + Assumptions `Papel admin` + retornos em `RoleDetail.tsx:80-92` | carregado C5 · `admin` travado C8 · sem `audit:read` C6 · pendente, `404`, `403`, `500` C7 (`:216-220`) | - |
+| filtros de `/audit` usados por link (3) | verified at 46c42a6 - `web/src/routes/_authed/audit/index.tsx:6-12` (`validateSearch`) e os `search` em `UserDetail.tsx:126,129` e `RoleDetail.tsx:113` | `resource_type`+`resource_id` de usuário C1, C9 · `resource_type`+`resource_id` de papel C5 (camada própria), C11 (fronteira, `audit-links.spec.ts:64-69`) · `actor_id` C2, C10 | - |
 
-Varredura de conjuntos sem linha:
-
-- `Surface`, `Relations` e `Landing` do plano estão vazios (`None`); nenhuma rota ou entidade deve linha.
-- Ramo `!can(me, "users:read")` de `UserDetail.tsx:85` e estados do catálogo (`catalogue.isPending`/`isError`, `failure = role.error ?? catalogue.error`) de `RoleDetail.tsx:80-92`: compartilham o mesmo `return` dos casos provados (`403`, pendente, erro), e as falhas F2/F4 mostraram que os links não podem escapar desses retornos sem matar C3/C4/C6/C7. Não são membros das AC (que nomeiam o pedido do registro); sem lacuna.
-- O membro "filtro de papel" é provado na própria camada (C5, `href` exato) mas não atravessa até a API real - tratado em `Test policy rows`, não como membro sem prova, porque a claim C5 é sobre o `href`.
+Varredura de conjuntos sem linha: carried from b3cd52f (`Surface`, `Relations` e `Landing` vazios; ramos de catálogo
+e `users:read` compartilham os retornos provados). O ponto que a rodada 1 tratou à parte - o filtro de papel sem
+travessia até a API real - agora tem prova na fronteira (C11).
 
 ## Test policy rows
 
+verified at 46c42a6 - linha não atendida da rodada 1 rejulgada; a linha de `UserDetail` carried from b3cd52f (nenhum arquivo classificado por ela foi tocado).
+
 | Row | Files it classifies | Required proof | Expectation met |
 | --- | --- | --- | --- |
-| Decides, reached across a boundary | `web/src/features/users/UserDetail.tsx` | boundary C9, C10 (`web/e2e/audit-links.spec.ts:29-48`) · own layer C1-C4 (6 casos da tabela de decisão, um por linha) | yes |
-| Decides, reached across a boundary | `web/src/features/rbac/RoleDetail.tsx` | own layer C5-C8 presente (7 casos) · boundary **ausente**: o `checks.md` declara "boundary por analogia ao C9"; `rg -n "roles" web/e2e/audit-links.spec.ts` não acha nada e nenhum spec em `web/e2e/` segue `Ver auditoria` de `/roles/<id>` nem prova `/audit?resource_type=role` contra a API (filtros por URL em `AuditList.test.tsx:180-201` e `list_events_test.go:190-191` só usam `user`). O "Independent test" do S2 no plano fica sem prova automatizada. Lição L-008 recorrente | no - gap |
+| Decides, reached across a boundary | `web/src/features/users/UserDetail.tsx` | carried from b3cd52f - boundary C9, C10 (`web/e2e/audit-links.spec.ts:29-48`) · own layer C1-C4 (6 casos, um por linha da tabela de decisão) | yes |
+| Decides, reached across a boundary | `web/src/features/rbac/RoleDetail.tsx` | boundary C11 (`web/e2e/audit-links.spec.ts:51-70`, contrato `/audit?resource_type=role&resource_id=<id>` afirmado contra a API real em `:64-69`) · own layer C5-C8 (7 casos, um por linha: carregado, `admin` travado, sem `audit:read`, pendente, `404`, `403`, `500`) | yes - lacuna da rodada 1 fechada; F5 e F6 mostram que a prova da fronteira falha sob mutação |
 | Decides, not reached across a boundary | nenhum arquivo do diff | - | n/a |
 | Entry point that decides nothing | nenhum arquivo do diff | - | n/a |
-| Instrumentation, pass-throughs | `validateSearch` de `/audit` (existente, não alterado) | coberto pelo consumidor C9, C10 | yes |
+| Instrumentation, pass-throughs | `validateSearch` de `/audit` (existente, não alterado) | coberto pelos consumidores C9, C10, C11 | yes |
 
 ## Faults injected
 
-Isolamento: `git worktree add <scratchpad>/wt HEAD` com junção para `web/node_modules`; a árvore real nunca foi
-editada. Baseline `git status --porcelain` gravado antes; após remover a junção e o worktree, o porcelain da árvore
-real é idêntico ao baseline (`diff` vazio - só os `??` pré-existentes de `.claude/skills/auth-security/` e
-`.cursor/skills/auth-security/`). O e2e do mutante rodou no worktree com `COMPOSE_PROJECT_NAME=aigateway` e porta
-8080 livre, então o binário foi construído do código mutado.
+F1-F4 carried from b3cd52f (superfícies não tocadas pelo fix; os testes Vitest e as linhas `:15-49` do spec não
+mudaram). F5-F6 verified at 46c42a6, sobre a superfície criada pelo fix (C11).
+
+Isolamento de F5-F6: `git worktree add <scratchpad>/wt HEAD` (`46c42a6`) com junção para `web/node_modules`; a
+árvore real nunca foi editada. Baseline `git status --porcelain` gravado antes (só `?? .claude/skills/auth-security/`
+e `?? .cursor/skills/auth-security/`). Cada mutante rodou `task e2e -- audit-links.spec.ts` no worktree com
+`COMPOSE_PROJECT_NAME=aigateway` e a porta 8080 livre, então o binário foi construído do código mutado. Depois:
+junção removida, `git worktree remove --force` e `git worktree prune`; `git worktree list` mostra só a árvore real
+e o porcelain da árvore real é idêntico ao baseline (`diff` vazio).
 
 | Mutation | Location | Killed |
 | --- | --- | --- |
-| F1 - troca os `search` dos dois links (`Ver auditoria` -> `actor_id`, `Ver ações` -> `resource_type`/`resource_id`) | `web/src/features/users/UserDetail.tsx:126,129` | yes - Vitest: `× links to the audit trail of the user`, `× links to the actions of the user` (C1, C2) |
-| F1 no e2e - mesmo mutante, binário reconstruído | `web/src/features/users/UserDetail.tsx:126,129` | yes - Playwright exit 1: `✘ admin follows Ver auditoria from a user` (`audit-links.spec.ts:29`, Expected "user", Received null), `✘ admin follows Ver ações on self` (`:45`, Received null) (C9, C10) |
-| F2 - links renderizados antes do carregamento e sem a trava `audit:read` (wrapper que mostra os links com o `id` da prop acima do corpo) | `web/src/features/users/UserDetail.tsx:30,124` | yes - `× hides audit links without audit:read`, `× hides audit links while pending/not found/forbidden/failed` (C3, C4) |
-| F3 - `resource_type: "role"` -> `"user"` | `web/src/features/rbac/RoleDetail.tsx:113` | yes - `× links to the audit trail of the role`, `× links to the audit trail of the admin role` (C5, C8) |
-| F4 - link renderizado antes do carregamento e sem a trava `audit:read` (wrapper acima do corpo) | `web/src/features/rbac/RoleDetail.tsx:34,110` | yes - `× hides audit link without audit:read`, `× hides audit link while pending/not found/forbidden/failed` (C6, C7) |
+| F1 - troca os `search` dos dois links (carried from b3cd52f) | `web/src/features/users/UserDetail.tsx:126,129` | yes - Vitest C1, C2; Playwright C9, C10 |
+| F2 - links fora da trava `audit:read` e antes do carregamento (carried from b3cd52f) | `web/src/features/users/UserDetail.tsx:30,124` | yes - C3, C4 |
+| F3 - `resource_type: "role"` -> `"user"` (carried from b3cd52f) | `web/src/features/rbac/RoleDetail.tsx:113` | yes - Vitest C5, C8 |
+| F4 - link fora da trava `audit:read` e antes do carregamento (carried from b3cd52f) | `web/src/features/rbac/RoleDetail.tsx:34,110` | yes - C6, C7 |
+| F5 - `resource_type: "role"` -> `"user"` no link do papel, binário reconstruído | `web/src/features/rbac/RoleDetail.tsx:113` | yes - Playwright exit 1: `✘ 3 ... audit-links.spec.ts:51:1 › admin follows Ver auditoria from a role`, `Expected: "role"`, `Received: "user"` em `audit-links.spec.ts:64` (C11); C9 e C10 seguiram verdes |
+| F6 - filtro `resource_id` ignorado pela API (`pgtype.Text{..., Valid: true}` -> `Valid: false`), URL do link intacta | `app/internal/features/audit/list_events/endpoint.go:95` | yes - Playwright exit 1: `✘ ... :51:1 › admin follows Ver auditoria from a role`, `toHaveCount` `Expected: 1`, `Received: 9` em `audit-links.spec.ts:67` (C11); também `✘ ... :15:1` em `:32` (C9, `Received: 46`) |
 
-Toda prova que carrega uma check (C1-C10) falhou ao menos uma vez. Observação lateral: na rodada F1 do Vitest, os
-testes pré-existentes `shows loading` (UserDetail e RoleDetail) estouraram o timeout de 5 s enquanto o build do e2e
-disputava CPU; RoleDetail não estava mutado, e em `HEAD` sem concorrência os dois passam. Não é achado desta feature.
+F5 mata a asserção de URL de C11 e F6 mata as asserções da tabela de C11 com a URL correta - as duas superfícies de
+asserção da prova nova. F6 muta código pré-existente (fora do diff da feature) de propósito: é a única forma de
+deixar a URL certa e o conteúdo errado, que é exatamente o contrato na fronteira que a linha de `Test policy` exige.
 
 ## Swept existing
 
-- authorization: "a API segue exigindo `audit:read` em `/audit/events`" - confirmado em `app/internal/features/audit/list_events/endpoint.go:18` (`const permission op.Permission = "audit:read"`) e `:48` (`Permission: permission`).
-- demais linhas `n/a` são política aprovada; nada a conferir no código.
+carried from b3cd52f - authorization: "a API segue exigindo `audit:read` em `/audit/events`" confirmado em
+`app/internal/features/audit/list_events/endpoint.go:18` (`const permission op.Permission = "audit:read"`) e `:48`
+(`Permission: permission`). Demais linhas `n/a` são política aprovada.
 
 ## Gate
 
+verified at 46c42a6:
+
 `npm --prefix web run test -- src/features/users/UserDetail.test.tsx src/features/rbac/RoleDetail.test.tsx --reporter=verbose` - 35 passed, 0 failed
-`task e2e -- audit-links.spec.ts` - 2 passed, 0 failed
+`task e2e -- audit-links.spec.ts --reporter=list` - 3 passed, 0 failed
 
 ## Ranked gaps
 
-1. Linha de `Test policy` "Decides, reached across a boundary" não atendida para `web/src/features/rbac/RoleDetail.tsx`: falta a prova na fronteira (Playwright seguindo `Ver auditoria` de `/roles/<id>` até `/audit` com `resource_type=role`/`resource_id=<id>`, listando o `role.created` do papel). O "Independent test" do S2 do plano descreve exatamente esse teste. C5-C8 - no evidence at the boundary (`web/e2e/audit-links.spec.ts` só cobre usuário). Recorrência de L-008.
+Nenhuma. A lacuna única da rodada 1 (prova na fronteira de `RoleDetail.tsx`) está fechada por C11.

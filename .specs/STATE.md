@@ -18,10 +18,10 @@
 
 ## Handoff
 
-**Feature**: audit - done
-**Where**: C1-C38 built and green; independent Verifier round 3 PASS at `8ba925d` (all proofs re-run, `task e2e -- audit.spec.ts` pass, 3 faults killed, `validate_verification.py` exit 0; `task check` exit 0 before the commit). Round 1 FAIL (null ip never proven, surviving mutant; detail fallbacks; index columns unasserted) closed by `363bbf6`; round 2 FAIL (`event.From` classified as a decision with no own-layer proof) closed by `8ba925d`
+**Feature**: audit-links - done
+**Where**: C1-C11 built and green; independent Verifier round 2 PASS at `46c42a6` (all proofs re-run, `task e2e -- audit-links.spec.ts` 3 passed, 6 faults killed across both rounds, `validate_verification.py` exit 0; `task check` exit 0 at `b3cd52f`). Round 1 FAIL (no boundary proof for the role link; "by analogy" claimed instead - L-008 again) closed by `46c42a6`
 **In progress**: none
-**Next step**: none planned - the template scope (users, rbac, audit) is complete; candidates are the "Ver auditoria" links from the user and role screens (audit plan Out of scope) or `task rename` (foundation Out of scope)
+**Next step**: none planned - remaining candidate is `task rename` (foundation Out of scope)
 **Blockers**: none
 **Uncommitted**: `.claude/skills/auth-security/`, `.cursor/skills/auth-security/` (untracked, user-added)
 **Branch**: `main` (local only, no remote)
