@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 30,
+  "next_id": 33,
   "lessons": [
     {
       "id": "L-001",
@@ -534,6 +534,60 @@
       ],
       "created": "2026-10-09T00:30:50Z",
       "last_seen": "2026-10-09T00:30:50Z"
+    },
+    {
+      "id": "L-030",
+      "key": "gate_fail::before running a proof against an injected fault confirm the mutation diff is non empty and is the intended change",
+      "text": "Before running a proof against an injected fault, confirm the mutation diff is non-empty and is the intended change",
+      "signal": "gate_fail",
+      "scope": "verify",
+      "status": "candidate",
+      "features": [
+        "rename"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        ".specs/features/rename/verification.md (round 2, faults F10-F15) (verify)"
+      ],
+      "created": "2026-10-09T15:09:09Z",
+      "last_seen": "2026-10-09T15:09:09Z"
+    },
+    {
+      "id": "L-031",
+      "key": "spec_precision_gap::write control characters in specs as escaped text never as the literal byte",
+      "text": "Write control characters in specs as escaped text, never as the literal byte",
+      "signal": "spec_precision_gap",
+      "scope": "specs",
+      "status": "candidate",
+      "features": [
+        "rename"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        ".specs/features/rename/checks.md:43 (C13) (specs)"
+      ],
+      "created": "2026-10-09T15:09:09Z",
+      "last_seen": "2026-10-09T15:09:09Z"
+    },
+    {
+      "id": "L-032",
+      "key": "gate_fail::never put a pipe character even escaped inside a report table cell the validator splits columns on it",
+      "text": "Never put a pipe character, even escaped, inside a report table cell; the validator splits columns on it",
+      "signal": "gate_fail",
+      "scope": "verify",
+      "status": "candidate",
+      "features": [
+        "rename"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        ".specs/features/rename/verification.md (round 2, validate_verification first run) (verify)"
+      ],
+      "created": "2026-10-09T15:09:09Z",
+      "last_seen": "2026-10-09T15:09:09Z"
     }
   ]
 }

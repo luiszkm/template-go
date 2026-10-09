@@ -186,6 +186,24 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: audit round 3 - app/internal/features/audit/event/event_test.go:25 (checks)
 - last seen: 2026-10-09T00:30:50Z
 
+### L-030 - Before running a proof against an injected fault, confirm the mutation diff is non-empty and is the intended change
+- signal: `gate_fail` · recurrence: 1 feature(s) · scope: `verify` · harmful: 0
+- features: rename
+- evidence: .specs/features/rename/verification.md (round 2, faults F10-F15) (verify)
+- last seen: 2026-10-09T15:09:09Z
+
+### L-031 - Write control characters in specs as escaped text, never as the literal byte
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `specs` · harmful: 0
+- features: rename
+- evidence: .specs/features/rename/checks.md:43 (C13) (specs)
+- last seen: 2026-10-09T15:09:09Z
+
+### L-032 - Never put a pipe character, even escaped, inside a report table cell; the validator splits columns on it
+- signal: `gate_fail` · recurrence: 1 feature(s) · scope: `verify` · harmful: 0
+- features: rename
+- evidence: .specs/features/rename/verification.md (round 2, validate_verification first run) (verify)
+- last seen: 2026-10-09T15:09:09Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.
