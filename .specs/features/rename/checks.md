@@ -40,7 +40,7 @@ Proof: `go -C app test -count=1 ./cmd/rename -run '^TestRename_SameValuesChanges
 **C12** - Um arquivo que termina exatamente no caminho do módulo (`see example.com/old/app` sem quebra de linha) vira `see github.com/acme/foo` (REN-01, AC 1; lacuna da verificação rodada 1, mutante F7) `[done]`
 Proof: `go -C app test -count=1 ./cmd/rename -run '^TestRename_ModuleAtEndOfFile$' -v`
 
-**C13** - Um nome com `` é recusado com erro contendo `name` e a árvore fica igual; 60 caracteres `ç` são aceitos e 61 são recusados, porque o limite conta caracteres e não bytes (REN-01, AC 6; lacuna da verificação rodada 1) `[done]`
+**C13** - Um nome com `\r` é recusado com erro contendo `name` e a árvore fica igual; 60 caracteres `ç` são aceitos e 61 são recusados, porque o limite conta caracteres e não bytes (REN-01, AC 6; lacuna da verificação rodada 1) `[done]`
 Proof: `go -C app test -count=1 ./cmd/rename -run '^TestRename_NameRunesAndCarriageReturn$' -v`
 
 **C14** - O binário sai com `1`, cita o arquivo no stderr e não imprime `wrote` quando `app/go.mod` falta ou não tem linha `module`, quando `web/index.html` não tem `<title>` e quando `web/package.json` não é JSON, deixando a árvore igual; quando a escrita de `web/package.json` falha, sai com `1`, os arquivos anteriores já escritos aparecem como `wrote` (`app/go.mod` com o módulo novo) e `web/package.json` não (REN-01, AC 6, Observable "what it prints when it fails halfway"; lacuna da verificação rodada 1) `[done]`

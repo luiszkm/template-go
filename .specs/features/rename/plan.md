@@ -78,8 +78,8 @@ e o nome novos, e `task check` passa nela sem nenhuma edição manual.
 
 | ID | Slice | Criteria | Status |
 | --- | --- | --- | --- |
-| REN-01 | S1 | 1, 2, 3, 4, 5, 6, 7, 8 | Implementing |
-| REN-02 | S2 | 9, 10, 11 | Implementing |
+| REN-01 | S1 | 1, 2, 3, 4, 5, 6, 7, 8 | Verified |
+| REN-02 | S2 | 9, 10, 11 | Verified |
 
 ## Observable
 

@@ -18,10 +18,10 @@
 
 ## Handoff
 
-**Feature**: audit-links - done
-**Where**: C1-C11 built and green; independent Verifier round 2 PASS at `46c42a6` (all proofs re-run, `task e2e -- audit-links.spec.ts` 3 passed, 6 faults killed across both rounds, `validate_verification.py` exit 0; `task check` exit 0 at `b3cd52f`). Round 1 FAIL (no boundary proof for the role link; "by analogy" claimed instead - L-008 again) closed by `46c42a6`
+**Feature**: rename - done
+**Where**: C1-C14 built and green; independent Verifier round 2 PASS at `b100ffe` (unit proofs re-run, C9/C10 carried from round 1 where `task rename` + `task check` passed in a renamed copy, 16 faults injected across both rounds, all killed (F7 survived round 1 and was killed in round 2), `validate_verification.py` exit 0; `task check` exit 0 at `be638d1`). Round 1 FAIL (module path at end of file, ``, rune count, non-validation error paths unproven) closed by `b100ffe`
 **In progress**: none
-**Next step**: none planned - remaining candidate is `task rename` (foundation Out of scope)
+**Next step**: none planned - every Out of scope candidate left is excluded by an AD or needs infrastructure the template does not have
 **Blockers**: none
 **Uncommitted**: `.claude/skills/auth-security/`, `.cursor/skills/auth-security/` (untracked, user-added)
-**Branch**: `main` (local only, no remote)
+**Branch**: `main` (local; remote `origin` = github.com/luiszkm/template-go, not pushed)
