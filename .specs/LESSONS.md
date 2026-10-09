@@ -9,10 +9,10 @@
 Corroborated across multiple features. Safe to apply as guidance.
 
 ### L-008 - When the plan applies a screen state to a second screen, prove that state on the second screen too
-- signal: `ac_gap` · recurrence: 2 feature(s) · scope: `web` · harmful: 0
-- features: users, audit
-- evidence: web/src/features/users/UserDetail.tsx:94 (web) (+1 more)
-- last seen: 2026-10-08T23:47:10Z
+- signal: `ac_gap` · recurrence: 3 feature(s) · scope: `web` · harmful: 0
+- features: users, audit, audit-links
+- evidence: web/src/features/users/UserDetail.tsx:94 (web) (+2 more)
+- last seen: 2026-10-09T12:39:25Z
 
 ### L-010 - Classify branching web components under the Test policy and assert every branch, including fallback messages and redirect guards
 - signal: `ac_gap` · recurrence: 3 feature(s) · scope: `web` · harmful: 0

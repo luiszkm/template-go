@@ -140,16 +140,18 @@
       "status": "confirmed",
       "features": [
         "users",
-        "audit"
+        "audit",
+        "audit-links"
       ],
-      "recurrence": 2,
+      "recurrence": 3,
       "harmful": 0,
       "evidence": [
         "web/src/features/users/UserDetail.tsx:94 (web)",
-        "web/src/features/audit/AuditDetail.tsx:47 (web)"
+        "web/src/features/audit/AuditDetail.tsx:47 (web)",
+        "web/e2e/audit-links.spec.ts:51 (web)"
       ],
       "created": "2026-10-08T16:13:38Z",
-      "last_seen": "2026-10-08T23:47:10Z"
+      "last_seen": "2026-10-09T12:39:25Z"
     },
     {
       "id": "L-009",
