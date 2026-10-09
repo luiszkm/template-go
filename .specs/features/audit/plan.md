@@ -125,12 +125,12 @@ por ação, por quem agiu, por recurso e por período, e abre um evento para ver
 
 | ID | Slice | Criteria | Status |
 | --- | --- | --- | --- |
-| AUD-01 | S1 | 1, 2, 3, 4, 5 | Implementing |
-| AUD-02 | S2 | 6, 7, 8, 9, 10, 11 | Implementing |
-| AUD-03 | S3 | 12, 13 | Implementing |
-| AUD-04 | S4 | 14, 15, 16 | Implementing |
-| AUD-05 | S5 | 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 | Implementing |
-| AUD-06 | S6 | 28, 29, 30 | Implementing |
+| AUD-01 | S1 | 1, 2, 3, 4, 5 | Verified |
+| AUD-02 | S2 | 6, 7, 8, 9, 10, 11 | Verified |
+| AUD-03 | S3 | 12, 13 | Verified |
+| AUD-04 | S4 | 14, 15, 16 | Verified |
+| AUD-05 | S5 | 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 | Verified |
+| AUD-06 | S6 | 28, 29, 30 | Verified |
 
 ## Observable
 

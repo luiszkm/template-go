@@ -18,10 +18,10 @@
 
 ## Handoff
 
-**Feature**: rbac - done
-**Where**: C1-C51 built and green; independent Verifier round 3 PASS at `7d0cae6` (all proofs re-run, `task e2e -- rbac.spec.ts` pass, 5 faults killed, `validate_verification.py` exit 0; `task check` exit 0 before the commit). Round 1 FAIL (surviving last-admin race mutant, C25 subset assertion, 5 unproven states) closed by `7ad1473`, C25 rewritten to "Surface plus 500" with user approval; round 2 FAIL (C21 gate blocked requests in authentication) closed by `7d0cae6`
+**Feature**: audit - done
+**Where**: C1-C38 built and green; independent Verifier round 3 PASS at `8ba925d` (all proofs re-run, `task e2e -- audit.spec.ts` pass, 3 faults killed, `validate_verification.py` exit 0; `task check` exit 0 before the commit). Round 1 FAIL (null ip never proven, surviving mutant; detail fallbacks; index columns unasserted) closed by `363bbf6`; round 2 FAIL (`event.From` classified as a decision with no own-layer proof) closed by `8ba925d`
 **In progress**: none
-**Next step**: plan `audit` (read-only audit log API and screen; AD-007)
+**Next step**: none planned - the template scope (users, rbac, audit) is complete; candidates are the "Ver auditoria" links from the user and role screens (audit plan Out of scope) or `task rename` (foundation Out of scope)
 **Blockers**: none
 **Uncommitted**: `.claude/skills/auth-security/`, `.cursor/skills/auth-security/` (untracked, user-added)
 **Branch**: `main` (local only, no remote)

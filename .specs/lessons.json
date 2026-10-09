@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 29,
+  "next_id": 30,
   "lessons": [
     {
       "id": "L-001",
@@ -514,6 +514,24 @@
       ],
       "created": "2026-10-09T00:11:20Z",
       "last_seen": "2026-10-09T00:11:20Z"
+    },
+    {
+      "id": "L-029",
+      "key": "spec_precision_gap::in a table driven own layer test make each case vary only the decision it names",
+      "text": "In a table-driven own-layer test, make each case vary only the decision it names",
+      "signal": "spec_precision_gap",
+      "scope": "checks",
+      "status": "candidate",
+      "features": [
+        "audit"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "audit round 3 - app/internal/features/audit/event/event_test.go:25 (checks)"
+      ],
+      "created": "2026-10-09T00:30:50Z",
+      "last_seen": "2026-10-09T00:30:50Z"
     }
   ]
 }

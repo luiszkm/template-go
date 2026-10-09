@@ -180,6 +180,12 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: audit round 2 - web/src/routes/_authed/audit/index.tsx (web)
 - last seen: 2026-10-09T00:11:20Z
 
+### L-029 - In a table-driven own-layer test, make each case vary only the decision it names
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `checks` · harmful: 0
+- features: audit
+- evidence: audit round 3 - app/internal/features/audit/event/event_test.go:25 (checks)
+- last seen: 2026-10-09T00:30:50Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.
