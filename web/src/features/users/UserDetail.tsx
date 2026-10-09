@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { type FormEvent, useEffect, useState } from "react";
 import { api } from "@/api/client";
 import type { components } from "@/api/schema";
@@ -120,6 +121,16 @@ export function UserDetail({ id }: { id: string }) {
         <h1 className="text-2xl font-semibold">{current.email}</h1>
         <span className="text-sm text-neutral-600">{current.active ? "Ativo" : "Desativado"}</span>
       </div>
+      {can(me, "audit:read") && (
+        <div className="flex gap-4 text-sm">
+          <Link to="/audit" search={{ resource_type: "user", resource_id: current.id }} className="underline">
+            Ver auditoria
+          </Link>
+          <Link to="/audit" search={{ actor_id: current.id }} className="underline">
+            Ver ações
+          </Link>
+        </div>
+      )}
       <form onSubmit={submit} className="max-w-sm space-y-4">
         <Field
           id="email"

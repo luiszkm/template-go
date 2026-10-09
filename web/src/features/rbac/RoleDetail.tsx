@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useEffect, useState } from "react";
 import { api } from "@/api/client";
 import { Field } from "@/components/Field";
@@ -107,6 +107,15 @@ export function RoleDetail({ id }: { id: string }) {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">{current.name}</h1>
+      {can(me, "audit:read") && (
+        <Link
+          to="/audit"
+          search={{ resource_type: "role", resource_id: current.id }}
+          className="block text-sm underline"
+        >
+          Ver auditoria
+        </Link>
+      )}
       {locked && <p>{adminLocked}</p>}
       <form onSubmit={submit} className="max-w-md space-y-4">
         <Field

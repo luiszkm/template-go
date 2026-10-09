@@ -126,4 +126,40 @@ describe("UserDetail on /users/$id", () => {
     await userEvent.click(screen.getByRole("button", { name: "Salvar" }));
     expect(await screen.findByText("expected length <= 100")).toHaveAttribute("id", "name-error");
   });
+
+  it("links to the audit trail of the user", async () => {
+    stubApi({ "GET /api/v1/users/me": meWith(...all, "audit:read"), [`GET ${path}`]: json(200, bia) });
+    renderAt(`/users/${id}`);
+    const link = await screen.findByRole("link", { name: "Ver auditoria" });
+    expect(link).toHaveAttribute("href", `/audit?resource_type=user&resource_id=${id}`);
+  });
+
+  it("links to the actions of the user", async () => {
+    stubApi({ "GET /api/v1/users/me": meWith(...all, "audit:read"), [`GET ${path}`]: json(200, bia) });
+    renderAt(`/users/${id}`);
+    const link = await screen.findByRole("link", { name: "Ver ações" });
+    expect(link).toHaveAttribute("href", `/audit?actor_id=${id}`);
+  });
+
+  it("hides audit links without audit:read", async () => {
+    stubApi({ "GET /api/v1/users/me": meWith(...all), [`GET ${path}`]: json(200, bia) });
+    renderAt(`/users/${id}`);
+    expect(await screen.findByRole("heading", { name: "b@x.com" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Salvar" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Ver auditoria" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Ver ações" })).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["pending", pending, "Carregando…"],
+    ["not found", json(404, { status: 404 }), "Usuário não encontrado."],
+    ["forbidden", json(403, { status: 403 }), "Você não tem permissão para acessar esta página."],
+    ["failed", json(500, { status: 500 }), "Não foi possível carregar os usuários."],
+  ])("hides audit links while %s", async (_, response, text) => {
+    stubApi({ "GET /api/v1/users/me": meWith(...all, "audit:read"), [`GET ${path}`]: response });
+    renderAt(`/users/${id}`);
+    expect(await screen.findByText(text)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Ver auditoria" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Ver ações" })).not.toBeInTheDocument();
+  });
 });
