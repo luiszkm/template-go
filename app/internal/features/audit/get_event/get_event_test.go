@@ -56,3 +56,20 @@ func TestGetEvent_404And422(t *testing.T) {
 		require.Equal(t, http.StatusUnprocessableEntity, get(bad), bad)
 	}
 }
+
+func TestGetEvent_IPPresentOrNull(t *testing.T) {
+	pool := testkit.MigratedDB(t)
+	h := audittest.Serve(t, pool, getevent.Register)
+	caller := testkit.SignIn(t, pool, "audit:read")
+	withIP := audittest.Insert(t, pool, audittest.Event{})
+	withoutIP := audittest.Insert(t, pool, audittest.Event{NoIP: true})
+	ipOf := func(id int64) any {
+		rec := testkit.Do(t, h, testkit.Request{Method: http.MethodGet, Path: fmt.Sprintf("/api/v1/audit/events/%d", id), Cookie: caller.Cookie})
+		require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+		body := testkit.JSON[map[string]any](t, rec)
+		require.Contains(t, body, "ip")
+		return body["ip"]
+	}
+	require.Equal(t, "10.0.0.7", ipOf(withIP))
+	require.Nil(t, ipOf(withoutIP))
+}

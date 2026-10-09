@@ -34,6 +34,7 @@ type Event struct {
 	Before       string
 	After        string
 	At           time.Time
+	NoIP         bool
 }
 
 func Insert(t *testing.T, pool *pgxpool.Pool, e Event) int64 {
@@ -57,11 +58,15 @@ func Insert(t *testing.T, pool *pgxpool.Pool, e Event) int64 {
 	if e.After != "" {
 		after = e.After
 	}
+	var ip any = "10.0.0.7"
+	if e.NoIP {
+		ip = nil
+	}
 	var id int64
 	err := pool.QueryRow(t.Context(), `
 		INSERT INTO audit_events (occurred_at, actor_id, action, resource_type, resource_id, before, after, ip, request_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, '10.0.0.7', 'req-1') RETURNING id`,
-		e.At, e.Actor, e.Action, e.ResourceType, e.ResourceID, before, after).Scan(&id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'req-1') RETURNING id`,
+		e.At, e.Actor, e.Action, e.ResourceType, e.ResourceID, before, after, ip).Scan(&id)
 	if err != nil {
 		t.Fatalf("audittest: insert event: %v", err)
 	}

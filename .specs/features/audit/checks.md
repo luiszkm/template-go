@@ -5,7 +5,7 @@ Plan: `.specs/features/audit/plan.md`
 
 ## Intent
 
-34 checks in 7 slices · 4 one-way doors · 0 open
+37 checks in 8 slices · 4 one-way doors · 0 open
 
 Comandos reais do repositório: `go -C app test <pkg> -run '<regex>'`, `npm --prefix web run test -- <file> -t "<name>"`
 e `npm --prefix web run e2e -- <spec>`. Testes Go que tocam o banco usam `testkit.MigratedDB` (Postgres real). Os
@@ -73,7 +73,7 @@ Proof: `go -C app test ./internal/app -run '^TestAudit_ReadOnly$'`
 
 ### S5 - Esquema, contrato e regras · ~4 files · ~15 KB · ~4k
 
-**C16** - After `migrate up`, `pg_indexes` lists `audit_events_actor_idx`, `audit_events_resource_idx`, `audit_events_action_idx` and `audit_events_occurred_idx` on `audit_events` (door 2) `[done]`
+**C16** - After `migrate up`, `pg_indexes` lists on `audit_events` the indexes `audit_events_actor_idx` on `(actor_id, id DESC)`, `audit_events_resource_idx` on `(resource_type, resource_id, id DESC)`, `audit_events_action_idx` on `(action, id DESC)` and `audit_events_occurred_idx` on `(occurred_at)`, each asserted against its `indexdef` (door 2; columns added in verification round 1) `[done]`
 Proof: `go -C app test ./migrations -run '^TestSchema_AuditIndexes$'`
 
 **C17** - The committed `app/openapi.json` documents exactly the statuses of the plan's `Surface` plus `500` for the 3 audit operations, and `web/src/api/schema.d.ts` is regenerated from it (Surface, door 1, door 4) `[done]`
@@ -142,6 +142,18 @@ Proof: `npm --prefix web run test -- src/features/audit/AuditDetail.test.tsx -t 
 **C34** - Against the built binary, an admin creates a user, opens `/audit`, filters `Ação` by `user.created`, sees that user's id in `Recurso`, opens the event and sees the new email in `Depois` (AUD-01, AUD-02, AUD-03, AUD-05, AUD-06 assembled) `[done]`
 Proof: `npm --prefix web run e2e -- audit.spec.ts`
 
+### S8 - Lacunas da verificação, rodada 1 · ~6 files · ~10 KB · ~3k
+
+**C35** - An event stored with a null `ip` returns `"ip": null` in the list and in the detail, and an event with `10.0.0.7` returns that string in both (AUD-01, AC 1; AUD-03, AC 12) `[done]`
+Proof: `go -C app test ./internal/features/audit/list_events -run '^TestListEvents_IPPresentOrNull$'`
+Proof: `go -C app test ./internal/features/audit/get_event -run '^TestGetEvent_IPPresentOrNull$'`
+
+**C36** - On `/audit/5`, an event with `ip: null` and `actor: null` shows `IP` as `—` and `Quem` as `Sistema` (AUD-06, AC 28; Assumption - ator nulo) `[done]`
+Proof: `npm --prefix web run test -- src/features/audit/AuditDetail.test.tsx -t "shows fallbacks for a missing ip and actor"`
+
+**C37** - Opening `/audit?de=2026-10-01&ate=2026-10-02` makes the first events request carry `from=2026-10-01T03:00:00.000Z` and `to=2026-10-03T03:00:00.000Z`, and fills `De` and `Até` with those dates (AUD-05, AC 24, AC 26) `[done]`
+Proof: `npm --prefix web run test -- src/features/audit/AuditList.test.tsx -t "reads the period from the URL"`
+
 ## Coverage
 
 | Set (size) | Member -> proof | Unproven |
@@ -151,6 +163,7 @@ Proof: `npm --prefix web run e2e -- audit.spec.ts`
 | `GET /api/v1/audit/actions` statuses (4) | 200 C11 · 401 C14 · 403 C14 · 500 documented C17 | - |
 | list item keys (8) | C1, table-driven over all 8 (exact key set) | - |
 | actor shapes (2) | user C2 · null C2 | - |
+| ip shapes (2) | present C35 · null C35 | - |
 | page outcomes (3) | default 50 with next C3 · limit with next C3 · last page null C3 | - |
 | cursor edges (2) | below the newest C4 · below the oldest C4 | - |
 | rejected list inputs (7) | C5, table-driven over all 7 | - |
@@ -160,10 +173,11 @@ Proof: `npm --prefix web run e2e -- audit.spec.ts`
 | detail id inputs (4) | unused 404 C13 · `abc` C13 · `0` C13 · `-1` C13 | - |
 | access marker per audit operation (3) | C14, table-driven over all 3 | - |
 | mutating methods under `/api/v1/audit` (4) | C15, table-driven over all 4 | - |
-| screen `/audit` states (11) | table C19 · empty C20 · loading C21 · error C22 · forbidden C23 · older C24 · action C25 · period C26 · actor and resource C27 · URL filters C28 · open C29 | - |
-| screen `/audit/$id` states (6) | fields and JSON C30 · null block C30 · not found C31 · loading C32 · error C32 · forbidden C23 | - |
+| screen `/audit` states (12) | table C19 · empty C20 · loading C21 · error C22 · forbidden C23 · older C24 · action C25 · period C26 · actor and resource C27 · URL filters C28 · URL period C37 · open C29 | - |
+| screen `/audit/$id` states (8) | fields and JSON C30 · null block C30 · null ip C36 · null actor C36 · not found C31 · loading C32 · error C32 · forbidden C23 | - |
 | menu link `Auditoria` (2) | shown C23 · hidden C23 | - |
 | startup assembly (2 places) | `features.Register` through `app.New` C11, C14, C15 · test harness `testkit.NewAPI` C1-C13 | - |
+| index definitions (4) | C16, table-driven over all 4 | - |
 | Landing doors (4) | 1 C3, C4, C17 · 2 C16 · 3 C11 · 4 C14, C17 | - |
 
 - Claims naming a status code, route or response shape: C1-C15, C17 - each proof issues a real HTTP request against the slice's registered handler or the assembled server, or reads the committed contract
@@ -185,6 +199,7 @@ Evidence (planned code, by shape):
 
 - `features/audit/list_events`: 7 input validations, 6 optional filters, cursor and `next` decision -> decides at the slice boundary; its HTTP test is its own layer (C1-C10)
 - `features/audit/get_event`: lookup or `404` -> entry point (C12, C13)
+- `features/audit/event.From` (added in the build, classified in verification round 1): maps actor present/absent and ip present/absent -> decides, reached across two slices; each arm asserted through both boundaries (C2, C35)
 - `platform/op.AuditActions`: dedup, skip empty, sort -> decides, reached across a boundary (C11 own layer and through `list_actions` and the assembled server)
 - `features/audit/list_actions`: forwards `op.AuditActions` -> instrumentation, proven through C11
 - `web/src/features/audit/{AuditList,AuditDetail}.tsx` and the date-to-range helper: map status, permission and filters to screen state and request parameters -> decides, not reached across a boundary; one asserted case per branch (C19-C33)

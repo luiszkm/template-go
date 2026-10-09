@@ -8,11 +8,17 @@
 
 Corroborated across multiple features. Safe to apply as guidance.
 
-### L-010 - Classify branching web components under the Test policy and assert every branch, including fallback messages and redirect guards
+### L-008 - When the plan applies a screen state to a second screen, prove that state on the second screen too
 - signal: `ac_gap` · recurrence: 2 feature(s) · scope: `web` · harmful: 0
-- features: users, rbac
-- evidence: web/src/features/users/LoginPage.tsx:21 (web) (+1 more)
-- last seen: 2026-10-08T20:57:58Z
+- features: users, audit
+- evidence: web/src/features/users/UserDetail.tsx:94 (web) (+1 more)
+- last seen: 2026-10-08T23:47:10Z
+
+### L-010 - Classify branching web components under the Test policy and assert every branch, including fallback messages and redirect guards
+- signal: `ac_gap` · recurrence: 3 feature(s) · scope: `web` · harmful: 0
+- features: users, rbac, audit
+- evidence: web/src/features/users/LoginPage.tsx:21 (web) (+2 more)
+- last seen: 2026-10-08T23:47:10Z
 
 ## Candidates (under observation - do NOT load as guidance yet)
 
@@ -59,12 +65,6 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - features: users
 - evidence: app/internal/platform/auth/auth.go:133 (platform)
 - last seen: 2026-10-08T16:13:37Z
-
-### L-008 - When the plan applies a screen state to a second screen, prove that state on the second screen too
-- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `web` · harmful: 0
-- features: users
-- evidence: web/src/features/users/UserDetail.tsx:94 (web)
-- last seen: 2026-10-08T16:13:38Z
 
 ### L-009 - When a criterion names two forms such as creation or edition, prove each form, not only the first
 - signal: `ac_gap` · recurrence: 1 feature(s) · scope: `web` · harmful: 0
@@ -149,6 +149,18 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - features: rbac
 - evidence: C21 round 3 - assign_roles_test.go:210 (concurrency)
 - last seen: 2026-10-08T21:36:44Z
+
+### L-024 - When a shared mapper branches on a nullable column, give each arm a coverage member and an asserted case, and classify the mapper in the Test policy even when it is not a slice
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `audit` · harmful: 0
+- features: audit
+- evidence: app/internal/features/audit/event/event.go:58 (audit)
+- last seen: 2026-10-08T23:47:09Z
+
+### L-025 - When a Landing door fixes an index's columns, assert the index definition, not only that its name exists
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `migrations` · harmful: 0
+- features: audit
+- evidence: C16 - app/migrations/schema_test.go:82 (migrations)
+- last seen: 2026-10-08T23:47:09Z
 
 ## Quarantined (failed when applied - ignore)
 

@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 24,
+  "next_id": 26,
   "lessons": [
     {
       "id": "L-001",
@@ -137,17 +137,19 @@
       "text": "When the plan applies a screen state to a second screen, prove that state on the second screen too",
       "signal": "ac_gap",
       "scope": "web",
-      "status": "candidate",
+      "status": "confirmed",
       "features": [
-        "users"
+        "users",
+        "audit"
       ],
-      "recurrence": 1,
+      "recurrence": 2,
       "harmful": 0,
       "evidence": [
-        "web/src/features/users/UserDetail.tsx:94 (web)"
+        "web/src/features/users/UserDetail.tsx:94 (web)",
+        "web/src/features/audit/AuditDetail.tsx:47 (web)"
       ],
       "created": "2026-10-08T16:13:38Z",
-      "last_seen": "2026-10-08T16:13:38Z"
+      "last_seen": "2026-10-08T23:47:10Z"
     },
     {
       "id": "L-009",
@@ -176,16 +178,18 @@
       "status": "confirmed",
       "features": [
         "users",
-        "rbac"
+        "rbac",
+        "audit"
       ],
-      "recurrence": 2,
+      "recurrence": 3,
       "harmful": 0,
       "evidence": [
         "web/src/features/users/LoginPage.tsx:21 (web)",
-        "web/src/features/rbac/RoleForm.tsx:40 (web)"
+        "web/src/features/rbac/RoleForm.tsx:40 (web)",
+        "web/src/features/audit/AuditDetail.tsx:49 (web)"
       ],
       "created": "2026-10-08T16:13:39Z",
-      "last_seen": "2026-10-08T20:57:58Z"
+      "last_seen": "2026-10-08T23:47:10Z"
     },
     {
       "id": "L-011",
@@ -420,6 +424,42 @@
       ],
       "created": "2026-10-08T21:36:44Z",
       "last_seen": "2026-10-08T21:36:44Z"
+    },
+    {
+      "id": "L-024",
+      "key": "surviving_mutant::when a shared mapper branches on a nullable column give each arm a coverage member and an asserted case and classify the mapper in the test policy even when it is not a slice",
+      "text": "When a shared mapper branches on a nullable column, give each arm a coverage member and an asserted case, and classify the mapper in the Test policy even when it is not a slice",
+      "signal": "surviving_mutant",
+      "scope": "audit",
+      "status": "candidate",
+      "features": [
+        "audit"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "app/internal/features/audit/event/event.go:58 (audit)"
+      ],
+      "created": "2026-10-08T23:47:09Z",
+      "last_seen": "2026-10-08T23:47:09Z"
+    },
+    {
+      "id": "L-025",
+      "key": "spec_precision_gap::when a landing door fixes an index s columns assert the index definition not only that its name exists",
+      "text": "When a Landing door fixes an index's columns, assert the index definition, not only that its name exists",
+      "signal": "spec_precision_gap",
+      "scope": "migrations",
+      "status": "candidate",
+      "features": [
+        "audit"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C16 - app/migrations/schema_test.go:82 (migrations)"
+      ],
+      "created": "2026-10-08T23:47:09Z",
+      "last_seen": "2026-10-08T23:47:09Z"
     }
   ]
 }

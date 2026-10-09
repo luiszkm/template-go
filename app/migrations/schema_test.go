@@ -1,6 +1,7 @@
 package migrations_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -69,16 +70,23 @@ func TestSchema_RoleNameUniqueIgnoringCase(t *testing.T) {
 
 func TestSchema_AuditIndexes(t *testing.T) {
 	pool := testkit.MigratedDB(t)
-	rows, err := pool.Query(t.Context(), `SELECT indexname FROM pg_indexes WHERE tablename = 'audit_events'`)
+	rows, err := pool.Query(t.Context(), `SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'audit_events'`)
 	require.NoError(t, err)
-	var names []string
+	defs := map[string]string{}
 	for rows.Next() {
-		var n string
-		require.NoError(t, rows.Scan(&n))
-		names = append(names, n)
+		var name, def string
+		require.NoError(t, rows.Scan(&name, &def))
+		defs[name] = def
 	}
 	require.NoError(t, rows.Err())
-	for _, want := range []string{"audit_events_actor_idx", "audit_events_resource_idx", "audit_events_action_idx", "audit_events_occurred_idx"} {
-		require.Contains(t, names, want)
+	want := map[string]string{
+		"audit_events_actor_idx":    "(actor_id, id DESC)",
+		"audit_events_resource_idx": "(resource_type, resource_id, id DESC)",
+		"audit_events_action_idx":   "(action, id DESC)",
+		"audit_events_occurred_idx": "(occurred_at)",
+	}
+	for name, columns := range want {
+		require.Contains(t, defs, name)
+		require.True(t, strings.HasSuffix(defs[name], "USING btree "+columns), defs[name])
 	}
 }

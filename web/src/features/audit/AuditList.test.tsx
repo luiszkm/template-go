@@ -202,6 +202,21 @@ describe("AuditList on /audit", () => {
     expect(first?.get("resource_id")).toBe("42");
   });
 
+  it("reads the period from the URL", async () => {
+    const requests = stubApi({
+      "GET /api/v1/users/me": reader,
+      "GET /api/v1/audit/actions": catalogue,
+      [`GET ${eventsPath}`]: page([event(1)]),
+    });
+    renderAt("/audit?de=2026-10-01&ate=2026-10-02");
+    await screen.findByRole("table");
+    const first = eventRequests(requests)[0];
+    expect(first?.get("from")).toBe("2026-10-01T03:00:00.000Z");
+    expect(first?.get("to")).toBe("2026-10-03T03:00:00.000Z");
+    expect(screen.getByLabelText("De")).toHaveValue("2026-10-01");
+    expect(screen.getByLabelText("Até")).toHaveValue("2026-10-02");
+  });
+
   it("opens an event", async () => {
     stubApi({
       "GET /api/v1/users/me": reader,

@@ -48,6 +48,17 @@ describe("AuditDetail on /audit/$id", () => {
     expect(block("Antes")).toBe("—");
   });
 
+  it("shows fallbacks for a missing ip and actor", async () => {
+    stubApi({
+      "GET /api/v1/users/me": reader,
+      [`GET ${path}`]: json(200, { ...detail, ip: null, actor: null }),
+    });
+    renderAt("/audit/5");
+    await screen.findByRole("heading", { name: "Antes" });
+    expect(fieldValue("IP")).toBe("—");
+    expect(fieldValue("Quem")).toBe("Sistema");
+  });
+
   it("requests the path id", async () => {
     const requests = stubApi({ "GET /api/v1/users/me": reader, [`GET ${path}`]: json(200, detail) });
     renderAt("/audit/5");

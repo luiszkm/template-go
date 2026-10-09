@@ -219,3 +219,25 @@ func TestListEvents_FiltersCombineAndPage(t *testing.T) {
 	require.Equal(t, []int64{created[0]}, ids(second))
 	require.Nil(t, second.Next)
 }
+
+func TestListEvents_IPPresentOrNull(t *testing.T) {
+	f := setup(t)
+	withIP := audittest.Insert(t, f.pool, audittest.Event{})
+	withoutIP := audittest.Insert(t, f.pool, audittest.Event{NoIP: true})
+	rec := testkit.Do(t, f.h, testkit.Request{Method: http.MethodGet, Path: "/api/v1/audit/events", Cookie: f.caller.Cookie})
+	require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+	ips := map[int64]*string{}
+	for _, it := range testkit.JSON[struct {
+		Items []struct {
+			ID int64   `json:"id"`
+			IP *string `json:"ip"`
+		} `json:"items"`
+	}](t, rec).Items {
+		ips[it.ID] = it.IP
+	}
+	require.NotNil(t, ips[withIP])
+	require.Equal(t, "10.0.0.7", *ips[withIP])
+	require.Contains(t, ips, withoutIP)
+	require.Nil(t, ips[withoutIP])
+	require.Contains(t, rec.Body.String(), `"ip":null`)
+}
