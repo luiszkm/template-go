@@ -288,10 +288,12 @@ func TestRename_ErrorPaths(t *testing.T) {
 	t.Run("missing go.mod", func(t *testing.T) {
 		root := fixture(t)
 		require.NoError(t, os.Remove(filepath.Join(root, "app", "go.mod")))
+		before := treeHash(t, root)
 		code, out, errb := runRename(t, "--root", root, "--module", "github.com/acme/foo", "--name", "Foo")
 		require.Equal(t, 1, code)
 		require.Contains(t, errb, "go.mod")
 		require.Empty(t, out)
+		require.Equal(t, before, treeHash(t, root))
 	})
 
 	t.Run("write fails after partial writes", func(t *testing.T) {
