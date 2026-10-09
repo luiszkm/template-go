@@ -231,3 +231,80 @@ func TestRename_SameValuesChangesNothing(t *testing.T) {
 	require.NotContains(t, out, "wrote")
 	require.Equal(t, before, treeHash(t, root))
 }
+
+func TestRename_ModuleAtEndOfFile(t *testing.T) {
+	root := fixture(t)
+	write(t, root, "web/tail.txt", "see "+oldModule)
+	_, err := Rename(root, "github.com/acme/foo", oldName)
+	require.NoError(t, err)
+	require.Equal(t, "see github.com/acme/foo", read(t, root, "web/tail.txt"))
+}
+
+func TestRename_NameRunesAndCarriageReturn(t *testing.T) {
+	t.Run("rejects carriage return", func(t *testing.T) {
+		root := fixture(t)
+		before := treeHash(t, root)
+		_, err := Rename(root, "github.com/acme/foo", "Fo\ro")
+		require.ErrorContains(t, err, "name")
+		require.Equal(t, before, treeHash(t, root))
+	})
+	t.Run("accepts 60 multibyte characters", func(t *testing.T) {
+		root := fixture(t)
+		name := strings.Repeat("ç", 60)
+		_, err := Rename(root, "github.com/acme/foo", name)
+		require.NoError(t, err)
+		require.Contains(t, read(t, root, "web/index.html"), "<title>"+name+"</title>")
+	})
+	t.Run("rejects 61 multibyte characters", func(t *testing.T) {
+		root := fixture(t)
+		_, err := Rename(root, "github.com/acme/foo", strings.Repeat("ç", 61))
+		require.ErrorContains(t, err, "name")
+	})
+}
+
+func TestRename_ErrorPaths(t *testing.T) {
+	for _, c := range []struct {
+		label   string
+		rel     string
+		content string
+		want    string
+	}{
+		{"go.mod without module line", "app/go.mod", "go 1.26\n", "app/go.mod"},
+		{"index.html without title", "web/index.html", "<html></html>\n", "web/index.html"},
+		{"invalid package.json", "web/package.json", "{not json", "web/package.json"},
+	} {
+		t.Run(c.label, func(t *testing.T) {
+			root := fixture(t)
+			write(t, root, c.rel, c.content)
+			before := treeHash(t, root)
+			code, out, errb := runRename(t, "--root", root, "--module", "github.com/acme/foo", "--name", "Foo")
+			require.Equal(t, 1, code)
+			require.Contains(t, errb, c.want)
+			require.Empty(t, out)
+			require.Equal(t, before, treeHash(t, root))
+		})
+	}
+
+	t.Run("missing go.mod", func(t *testing.T) {
+		root := fixture(t)
+		require.NoError(t, os.Remove(filepath.Join(root, "app", "go.mod")))
+		code, out, errb := runRename(t, "--root", root, "--module", "github.com/acme/foo", "--name", "Foo")
+		require.Equal(t, 1, code)
+		require.Contains(t, errb, "go.mod")
+		require.Empty(t, out)
+	})
+
+	t.Run("write fails after partial writes", func(t *testing.T) {
+		root := fixture(t)
+		locked := filepath.Join(root, "web", "package.json")
+		require.NoError(t, os.Chmod(locked, 0o444))
+		t.Cleanup(func() { _ = os.Chmod(locked, 0o644) })
+		code, out, errb := runRename(t, "--root", root, "--module", "github.com/acme/foo", "--name", oldName)
+		require.Equal(t, 1, code)
+		require.Contains(t, out, "wrote app/go.mod\n")
+		require.NotContains(t, out, "wrote web/package.json")
+		require.Contains(t, errb, "rename:")
+		require.Contains(t, errb, "package.json")
+		require.Equal(t, "module github.com/acme/foo\n\ngo 1.26\n", read(t, root, "app/go.mod"))
+	})
+}

@@ -3,7 +3,7 @@
 Profile: standard
 Plan: `.specs/features/rename/plan.md`
 
-11 checks in 2 slices · 2 one-way doors · 0 open, of which 0 block
+14 checks in 2 slices · 2 one-way doors · 0 open, of which 0 block
 
 ## Checks
 
@@ -37,6 +37,15 @@ Proof: `go -C app test -count=1 ./cmd/rename -run '^TestMain_FailuresExit1$' -v`
 **C8** - Rodar com o módulo e o nome que a árvore já tem não altera nenhum arquivo (hash igual), não imprime `wrote` e retorna sem erro (REN-01, AC 8) `[done]`
 Proof: `go -C app test -count=1 ./cmd/rename -run '^TestRename_SameValuesChangesNothing$' -v`
 
+**C12** - Um arquivo que termina exatamente no caminho do módulo (`see example.com/old/app` sem quebra de linha) vira `see github.com/acme/foo` (REN-01, AC 1; lacuna da verificação rodada 1, mutante F7) `[done]`
+Proof: `go -C app test -count=1 ./cmd/rename -run '^TestRename_ModuleAtEndOfFile$' -v`
+
+**C13** - Um nome com `` é recusado com erro contendo `name` e a árvore fica igual; 60 caracteres `ç` são aceitos e 61 são recusados, porque o limite conta caracteres e não bytes (REN-01, AC 6; lacuna da verificação rodada 1) `[done]`
+Proof: `go -C app test -count=1 ./cmd/rename -run '^TestRename_NameRunesAndCarriageReturn$' -v`
+
+**C14** - O binário sai com `1`, cita o arquivo no stderr e não imprime `wrote` quando `app/go.mod` falta ou não tem linha `module`, quando `web/index.html` não tem `<title>` e quando `web/package.json` não é JSON, deixando a árvore igual; quando a escrita de `web/package.json` falha, sai com `1`, os arquivos anteriores já escritos aparecem como `wrote` (`app/go.mod` com o módulo novo) e `web/package.json` não (REN-01, AC 6, Observable "what it prints when it fails halfway"; lacuna da verificação rodada 1) `[done]`
+Proof: `go -C app test -count=1 ./cmd/rename -run '^TestRename_ErrorPaths$' -v`
+
 ### S2 - `task rename` deixa a cópia verde · 3 files · 12 KB · ~3k
 
 **C9** - Numa cópia do repositório, `task rename MODULE=github.com/acme/foo NAME="Foo Bar"` sai com `0`; nenhum arquivo copiado contém `github.com/luiszkm/template-go`; `app/openapi.json` contém `"title":"Foo Bar API"`; `web/package.json` tem `"name": "foo-web"` (REN-02, AC 9) `[done]`
@@ -58,10 +67,11 @@ Proof: `go -C app test -count=1 ./cmd/rename -run '^TestTaskfileAndDocs_DeclareR
 | arquivos do pacote web (3 campos) | `package.json` `name` C4 · lock raiz C4 · lock `packages[""]` C4 | - |
 | diretórios excluídos (8) | `.specs` C5 · `.git` C5 · `node_modules` C5 · `bin` C5 · `dist` C5 · `.task` C5 · `test-results` C5 · `playwright-report` C5 | - |
 | outros não alvos (3) | binário com NUL C5 · `text/template` C5 · `Template` fora dos três lugares C5 | - |
-| fronteira do caminho do módulo (2) | caminho exato e com `/` seguinte C1, C2 · mesmo prefixo com mais caracteres C1 | - |
-| entradas inválidas (11) | módulo `Not A Path` C6 · módulo `.foo` C6 · nome vazio C6 · 61 caracteres C6 · `"` C6 · `<` C6 · `>` C6 · `\` C6 · `{` C6 · `}` C6 · `\n` C6 | - |
-| limites aceitos do nome (2) | 1 caractere C6 · 60 caracteres C6 | - |
+| fronteira do caminho do módulo (3) | caminho exato e com `/` seguinte C1, C2 · mesmo prefixo com mais caracteres C1 · fim de arquivo C12 | - |
+| entradas inválidas (13) | módulo `Not A Path` C6 · módulo `.foo` C6 · nome vazio C6 · 61 caracteres C6 · 61 caracteres multibyte C13 · `\r` C13 · `"` C6 · `<` C6 · `>` C6 · `\` C6 · `{` C6 · `}` C6 · `\n` C6 | - |
+| limites aceitos do nome (3) | 1 caractere C6 · 60 caracteres C6 · 60 caracteres multibyte C13 | - |
 | saídas do binário (4) | sucesso C1 (por `Rename`) e C9 (pela task) · falta `--module` C7 · falta `--name` C7 · entrada inválida C7 | - |
+| caminhos de erro fora da validação (5) | `app/go.mod` ausente C14 · sem linha `module` C14 · sem `<title>` C14 · `package.json` inválido C14 · escrita falha após escritas parciais C14 | - |
 | Landing doors (2) | `golang.org/x/mod` `CheckPath` C6 (módulo `.foo` só é recusado pela regra do Go) · task e flags C11 | - |
 
 - O plano não tem `Surface` nem `Relations`; nada mais a juntar
@@ -80,8 +90,8 @@ O `AGENTS.md` já responde às duas perguntas (`## Test policy`); estas são as 
 
 Evidence (planned code, by shape):
 
-- `cmd/rename` `Rename`: validação (11 recusas, 2 limites), filtro de diretório (8), filtro de binário, fronteira do caminho, derivação do pacote (2), comparação antes de escrever -> decides, reached across a boundary (a task): own layer C1-C8, boundary C9-C10
-- `cmd/rename` `main`/`run`: flags ausentes e código de saída -> entry point: C7
+- `cmd/rename` `Rename`: validação (11 recusas, 2 limites), filtro de diretório (8), filtro de binário, fronteira do caminho, derivação do pacote (2), comparação antes de escrever -> decides, reached across a boundary (a task): own layer C1-C8, C12-C13, boundary C9-C10
+- `cmd/rename` `main`/`run`: flags ausentes e código de saída -> entry point: C7 (flags e validação), C14 (cada caminho de erro de leitura e escrita)
 - closest analogue: `cmd/newslice`, mesmo shape (gerador chamado por task), provado na própria camada (`newslice_test.go`) e na fronteira por cópia do repo (`repo_test.go`, `TestGenerated_TaskCheckPasses`)
 
 ## Swept
