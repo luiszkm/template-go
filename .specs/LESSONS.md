@@ -204,6 +204,24 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: .specs/features/rename/verification.md (round 2, validate_verification first run) (verify)
 - last seen: 2026-10-09T15:09:09Z
 
+### L-033 - When a coverage row names a status for a sampled property, the cited proof must issue a request that returns that status
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `http` · harmful: 0
+- features: hardening
+- evidence: C21 / app/internal/app/hardening_test.go:123 (http)
+- last seen: 2026-10-10T17:31:45Z
+
+### L-034 - When a mapping rewrites some cases and preserves others, assert the preserved value too, not only the rewritten one
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `httpx` · harmful: 0
+- features: hardening
+- evidence: C2, C4 / app/internal/platform/httpx/problem.go:45 (httpx)
+- last seen: 2026-10-10T17:31:45Z
+
+### L-035 - A branch added during the build to keep an older check true needs its own check for each side of the branch
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `httpx` · harmful: 0
+- features: hardening
+- evidence: app/internal/platform/httpx/middleware.go:108,126 (httpx)
+- last seen: 2026-10-10T17:31:46Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

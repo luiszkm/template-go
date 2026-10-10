@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 33,
+  "next_id": 36,
   "lessons": [
     {
       "id": "L-001",
@@ -588,6 +588,60 @@
       ],
       "created": "2026-10-09T15:09:09Z",
       "last_seen": "2026-10-09T15:09:09Z"
+    },
+    {
+      "id": "L-033",
+      "key": "ac_gap::when a coverage row names a status for a sampled property the cited proof must issue a request that returns that status",
+      "text": "When a coverage row names a status for a sampled property, the cited proof must issue a request that returns that status",
+      "signal": "ac_gap",
+      "scope": "http",
+      "status": "candidate",
+      "features": [
+        "hardening"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C21 / app/internal/app/hardening_test.go:123 (http)"
+      ],
+      "created": "2026-10-10T17:31:45Z",
+      "last_seen": "2026-10-10T17:31:45Z"
+    },
+    {
+      "id": "L-034",
+      "key": "spec_precision_gap::when a mapping rewrites some cases and preserves others assert the preserved value too not only the rewritten one",
+      "text": "When a mapping rewrites some cases and preserves others, assert the preserved value too, not only the rewritten one",
+      "signal": "spec_precision_gap",
+      "scope": "httpx",
+      "status": "candidate",
+      "features": [
+        "hardening"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C2, C4 / app/internal/platform/httpx/problem.go:45 (httpx)"
+      ],
+      "created": "2026-10-10T17:31:45Z",
+      "last_seen": "2026-10-10T17:31:45Z"
+    },
+    {
+      "id": "L-035",
+      "key": "ac_gap::a branch added during the build to keep an older check true needs its own check for each side of the branch",
+      "text": "A branch added during the build to keep an older check true needs its own check for each side of the branch",
+      "signal": "ac_gap",
+      "scope": "httpx",
+      "status": "candidate",
+      "features": [
+        "hardening"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "app/internal/platform/httpx/middleware.go:108,126 (httpx)"
+      ],
+      "created": "2026-10-10T17:31:46Z",
+      "last_seen": "2026-10-10T17:31:46Z"
     }
   ]
 }

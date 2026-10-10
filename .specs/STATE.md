@@ -15,11 +15,13 @@
 | AD-009 | `task check` (Taskfile) is the single gate, run locally and in CI: format, golangci-lint v2, sqlc diff, archtest, go test (testcontainers Postgres), OpenAPI export diff, web typecheck/lint/test | one command means an agent cannot pick a weaker subset | active | 2026-10-07 |
 | AD-010 | Spec workflow is `tlc-spec-lean` with `profile: standard` | catches unproven set members and tests that pass under a wrong implementation | active | 2026-10-07 |
 | AD-011 | Code carries no comments; only machine-read annotations (`//go:`, `//nolint:`, `-- +goose`, sqlc `-- name:`, generator markers, `biome-ignore`) | code must explain itself through names and shape; comments drift from the code and an LLM trusts them; enforced by `archtest.CheckComments` (2026-10-08) | active | 2026-10-08 |
+| AD-012 | Periodic background work runs in-process: a blocking `func(ctx, ...)` loop started by `cmd/api serve` in a goroutine bound to the serve context, run once at start and then on a ticker, awaited before `serve` returns; each run is an idempotent statement so every replica may run it (first: `auth.SweepSessions`) | no new process, extension or queue for a periodic `DELETE`; rejected `pg_cron` (extension not in the template's Postgres) and leader election (unneeded for idempotent work) | active | 2026-10-09 |
 
 ## Handoff
 
 **Feature**: rename - done
-**Where**: C1-C14 built and green; independent Verifier round 2 PASS at `b100ffe` (unit proofs re-run, C9/C10 carried from round 1 where `task rename` + `task check` passed in a renamed copy, 16 faults injected across both rounds, all killed (F7 survived round 1 and was killed in round 2), `validate_verification.py` exit 0; `task check` exit 0 at `be638d1`). Round 1 FAIL (module path at end of file, ``, rune count, non-validation error paths unproven) closed by `b100ffe`
+**Where**: C1-C14 built and green; independent Verifier round 2 PASS at `b100ffe` (unit proofs re-run, C9/C10 carried from round 1 where `task rename` + `task check` passed in a renamed copy, 16 faults injected across both rounds, all killed (F7 survived round 1 and was killed in round 2), `validate_verification.py` exit 0; `task check` exit 0 at `be638d1`). Round 1 FAIL (module path at end of file, `
+`, rune count, non-validation error paths unproven) closed by `b100ffe`
 **In progress**: none
 **Next step**: none planned - every Out of scope candidate left is excluded by an AD or needs infrastructure the template does not have
 **Blockers**: none

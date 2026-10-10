@@ -16,6 +16,7 @@ tasks:
     cmds:
       - task: fmt:check
       - task: lint
+      - task: vuln
       - task: gen:check
       - task: archtest
       - task: test
@@ -47,6 +48,12 @@ tasks:
     dir: app
     cmds:
       - "{{.GOTOOL}} golangci-lint run ./..."
+
+  vuln:
+    desc: Known-vulnerability scan of the Go module (needs network for vuln.go.dev).
+    dir: app
+    cmds:
+      - "{{.GOTOOL}} govulncheck ./..."
 
   archtest:
     desc: Architecture rules (imports between features, migration names, harness files).

@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -96,31 +97,42 @@ var ErrNoSession = errors.New("auth: no valid session")
 func Lookup(ctx context.Context, q Querier, token string, ttl time.Duration) (Principal, error) {
 	hash := HashToken(token)
 	var userID uuid.UUID
+	var perms []string
 	err := q.QueryRow(ctx, `
-		SELECT s.user_id FROM sessions s JOIN users u ON u.id = s.user_id
-		WHERE s.token_hash = $1 AND u.deactivated_at IS NULL AND s.created_at > now() - make_interval(secs => $2)`,
-		hash, ttl.Seconds()).Scan(&userID)
+		SELECT s.user_id, coalesce(array_agg(DISTINCT rp.permission) FILTER (WHERE rp.permission IS NOT NULL), '{}')
+		FROM sessions s
+		JOIN users u ON u.id = s.user_id
+		LEFT JOIN user_roles ur ON ur.user_id = s.user_id
+		LEFT JOIN role_permissions rp ON rp.role_id = ur.role_id
+		WHERE s.token_hash = $1 AND u.deactivated_at IS NULL AND s.created_at > now() - make_interval(secs => $2)
+		GROUP BY s.user_id`,
+		hash, ttl.Seconds()).Scan(&userID, &perms)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Principal{}, ErrNoSession
 	}
 	if err != nil {
 		return Principal{}, fmt.Errorf("auth: lookup session: %w", err)
 	}
-	rows, err := q.Query(ctx, `
-		SELECT DISTINCT rp.permission FROM user_roles ur JOIN role_permissions rp ON rp.role_id = ur.role_id
-		WHERE ur.user_id = $1`, userID)
-	if err != nil {
-		return Principal{}, fmt.Errorf("auth: load permissions: %w", err)
-	}
-	perms, err := pgx.CollectRows(rows, pgx.RowTo[string])
-	if err != nil {
-		return Principal{}, fmt.Errorf("auth: load permissions: %w", err)
-	}
 	p := Principal{UserID: userID, SessionHash: hash, Permissions: make(map[op.Permission]struct{}, len(perms))}
 	for _, perm := range perms {
 		p.Permissions[op.Permission(perm)] = struct{}{}
 	}
 	return p, nil
+}
+
+func SweepSessions(ctx context.Context, q Querier, ttl, every time.Duration, log *slog.Logger) {
+	ticker := time.NewTicker(every)
+	defer ticker.Stop()
+	for {
+		if _, err := q.Exec(ctx, `DELETE FROM sessions WHERE created_at <= now() - make_interval(secs => $1)`, ttl.Seconds()); err != nil && ctx.Err() == nil {
+			log.LogAttrs(ctx, slog.LevelWarn, "session sweep failed", slog.String("error", err.Error()))
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		}
+	}
 }
 
 func Install(api huma.API, q Querier, ttl time.Duration) {
@@ -145,7 +157,7 @@ func Install(api huma.API, q Querier, ttl time.Duration) {
 			return
 		}
 		if err != nil {
-			_ = huma.WriteErr(api, ctx, http.StatusInternalServerError, "internal server error")
+			_ = huma.WriteErr(api, ctx, http.StatusInternalServerError, "internal server error", err)
 			return
 		}
 		if perm, _ := meta[op.MetaPermission].(op.Permission); perm != "" && !p.Can(perm) {
