@@ -155,14 +155,14 @@ CSP e anti-framing; o gate falha numa dependência vulnerável.
 
 | ID | Slice | Criteria | Status |
 | --- | --- | --- | --- |
-| HARD-01 | S1 | 1, 2, 3, 4, 5, 6 | Implementing |
-| HARD-02 | S2 | 7, 8, 9, 10, 11 | Implementing |
-| HARD-03 | S3 | 12, 13 | Implementing |
-| HARD-04 | S4 | 14, 15, 16, 17, 18, 19 | Implementing |
-| HARD-05 | S5 | 20, 21 | Implementing |
-| HARD-06 | S6 | 22, 23, 24, 25 | Implementing |
-| HARD-07 | S7 | 26, 27 | Implementing |
-| HARD-08 | S8 | 28, 29, 30, 31 | Implementing |
+| HARD-01 | S1 | 1, 2, 3, 4, 5, 6 | Verified |
+| HARD-02 | S2 | 7, 8, 9, 10, 11 | Verified |
+| HARD-03 | S3 | 12, 13 | Verified |
+| HARD-04 | S4 | 14, 15, 16, 17, 18, 19 | Verified |
+| HARD-05 | S5 | 20, 21 | Verified |
+| HARD-06 | S6 | 22, 23, 24, 25 | Verified |
+| HARD-07 | S7 | 26, 27 | Verified |
+| HARD-08 | S8 | 28, 29, 30, 31 | Verified |
 
 ## Observable
 
