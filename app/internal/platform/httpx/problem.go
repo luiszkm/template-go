@@ -2,18 +2,25 @@ package httpx
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
 )
 
+const internalDetail = "internal server error"
+
 type Problem struct {
 	huma.ErrorModel
 	RequestID string `json:"request_id" doc:"Correlates the error with the server logs (same value as the X-Request-ID header)."`
+	cause     error
 }
 
 func InstallProblems() {
 	huma.NewError = func(status int, msg string, errs ...error) huma.StatusError {
+		if status >= http.StatusInternalServerError {
+			return serverProblem(status, msg, errs)
+		}
 		details := make([]*huma.ErrorDetail, 0, len(errs))
 		for _, err := range errs {
 			if err == nil {
@@ -35,6 +42,16 @@ func InstallProblems() {
 	}
 }
 
+func serverProblem(status int, msg string, errs []error) *Problem {
+	if status == http.StatusInternalServerError {
+		msg = internalDetail
+	}
+	return &Problem{
+		ErrorModel: huma.ErrorModel{Type: "about:blank", Title: http.StatusText(status), Status: status, Detail: msg},
+		cause:      errors.Join(errs...),
+	}
+}
+
 func ProblemTransformer(ctx huma.Context, _ string, v any) (any, error) {
 	if p, ok := v.(*Problem); ok {
 		if p.RequestID == "" {
@@ -43,6 +60,7 @@ func ProblemTransformer(ctx huma.Context, _ string, v any) (any, error) {
 		if p.Instance == "" {
 			p.Instance = ctx.URL().Path
 		}
+		recordCause(ctx.Context(), p.cause)
 	}
 	return v, nil
 }

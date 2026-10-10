@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/pressly/goose/v3"
 
 	"github.com/luiszkm/template-go/internal/app"
+	"github.com/luiszkm/template-go/internal/platform/auth"
 	"github.com/luiszkm/template-go/internal/platform/config"
 	"github.com/luiszkm/template-go/internal/platform/db"
 	"github.com/luiszkm/template-go/migrations"
@@ -95,9 +97,26 @@ func serve(ctx context.Context, cfg config.Config, log *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	srv := &http.Server{Handler: h, ReadHeaderTimeout: 10 * time.Second}
+	srv := newServer(cfg, h)
+
+	sweepCtx, stopSweep := context.WithCancel(ctx)
+	var sweeping sync.WaitGroup
+	sweeping.Go(func() { auth.SweepSessions(sweepCtx, pool, cfg.SessionTTL, cfg.SessionSweepInterval, log) })
+	defer sweeping.Wait()
+	defer stopSweep()
+
 	log.Info("listening", slog.String("addr", ln.Addr().String()))
 	return app.Run(ctx, srv, ln, cfg.ShutdownTimeout, log)
+}
+
+func newServer(cfg config.Config, h http.Handler) *http.Server {
+	return &http.Server{
+		Handler:           h,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       cfg.HTTPReadTimeout,
+		WriteTimeout:      cfg.HTTPWriteTimeout,
+		IdleTimeout:       cfg.HTTPIdleTimeout,
+	}
 }
 
 func migrateUp(ctx context.Context, url string) error {

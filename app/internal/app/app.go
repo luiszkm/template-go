@@ -14,7 +14,6 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/luiszkm/template-go/internal/features"
 	"github.com/luiszkm/template-go/internal/platform/auth"
@@ -73,7 +72,7 @@ func New(o Options) (http.Handler, error) {
 
 	mux.Handle("/api/", httpx.NotFound())
 	mux.Handle("/", webui.Handler(o.Web))
-	return otelhttp.NewHandler(httpx.WithClientIP(httpx.Chain(mux, o.Logger), o.TrustedProxies), "http"), nil
+	return httpx.Wrap(mux, httpx.Options{Logger: o.Logger, TrustedProxies: o.TrustedProxies, HSTS: o.CookieSecure}), nil
 }
 
 func OpenAPI(h http.Handler) ([]byte, error) {

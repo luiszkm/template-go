@@ -39,7 +39,7 @@ func NewAPI(t *testing.T, pool *pgxpool.Pool, o APIOptions) (huma.API, http.Hand
 	api := httpx.NewAPI(mux)
 	auth.Install(api, pool, o.SessionTTL)
 	d := deps.Deps{DB: pool, Logger: o.Logger, SessionTTL: o.SessionTTL, CookieSecure: o.CookieSecure}
-	return api, httpx.WithClientIP(httpx.Chain(mux, DiscardLogger()), o.TrustedProxies), d
+	return api, httpx.Wrap(mux, httpx.Options{Logger: o.Logger, TrustedProxies: o.TrustedProxies, HSTS: o.CookieSecure}), d
 }
 
 func NewAPIWithoutDatabase(t *testing.T) (huma.API, http.Handler, deps.Deps) {
@@ -47,7 +47,7 @@ func NewAPIWithoutDatabase(t *testing.T) (huma.API, http.Handler, deps.Deps) {
 	mux := http.NewServeMux()
 	api := httpx.NewAPI(mux)
 	auth.Install(api, nil, 12*time.Hour)
-	return api, httpx.Chain(mux, DiscardLogger()), deps.Deps{Logger: DiscardLogger(), SessionTTL: 12 * time.Hour}
+	return api, httpx.Wrap(mux, httpx.Options{Logger: DiscardLogger()}), deps.Deps{Logger: DiscardLogger(), SessionTTL: 12 * time.Hour}
 }
 
 type User struct {

@@ -75,7 +75,7 @@ func TestTaskfile_CheckRunsAllSteps(t *testing.T) {
 	tf := loadTaskfile(t)
 	steps := calledTasks(t, tf, "check")
 	require.Equal(t, []string{
-		"fmt:check", "lint", "gen:check", "archtest", "test", "web:typecheck", "web:lint", "web:test",
+		"fmt:check", "lint", "vuln", "gen:check", "archtest", "test", "web:typecheck", "web:lint", "web:test",
 	}, steps)
 
 	require.Contains(t, commands(t, tf, "fmt:check"), "cmd/fmtcheck")
@@ -115,7 +115,6 @@ func TestDependencies_Declared(t *testing.T) {
 	for _, mod := range []string{
 		"github.com/danielgtaylor/huma/v2 ", "github.com/jackc/pgx/v5 ", "github.com/pressly/goose/v3 ",
 		"github.com/caarlos0/env/v11 ", "github.com/stretchr/testify ", "github.com/testcontainers/testcontainers-go ",
-		"go.opentelemetry.io/otel ",
 	} {
 		require.Contains(t, gomod, "\t"+mod, "app/go.mod must require %s", strings.TrimSpace(mod))
 	}

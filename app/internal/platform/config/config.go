@@ -16,9 +16,14 @@ type Config struct {
 	ReadyTimeout    time.Duration `env:"READY_TIMEOUT" envDefault:"2s"`
 	LogLevel        string        `env:"LOG_LEVEL" envDefault:"info"`
 
-	SessionTTL     time.Duration `env:"SESSION_TTL" envDefault:"12h"`
-	CookieSecure   bool          `env:"COOKIE_SECURE" envDefault:"true"`
-	TrustedProxies Prefixes      `env:"TRUSTED_PROXIES"`
+	HTTPReadTimeout  time.Duration `env:"HTTP_READ_TIMEOUT" envDefault:"30s"`
+	HTTPWriteTimeout time.Duration `env:"HTTP_WRITE_TIMEOUT" envDefault:"30s"`
+	HTTPIdleTimeout  time.Duration `env:"HTTP_IDLE_TIMEOUT" envDefault:"120s"`
+
+	SessionTTL           time.Duration `env:"SESSION_TTL" envDefault:"12h"`
+	SessionSweepInterval time.Duration `env:"SESSION_SWEEP_INTERVAL" envDefault:"1h"`
+	CookieSecure         bool          `env:"COOKIE_SECURE" envDefault:"true"`
+	TrustedProxies       Prefixes      `env:"TRUSTED_PROXIES"`
 }
 
 type Prefixes []netip.Prefix

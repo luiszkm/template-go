@@ -51,13 +51,18 @@ func (s Spec) validate() error {
 	default:
 		return fmt.Errorf("op: operation %q declares more than one of Permission, Public and Authenticated; choose one", s.ID)
 	}
-	switch s.Method {
-	case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
-		if s.AuditAction == "" {
-			return fmt.Errorf("op: mutating operation %q (%s) declares no AuditAction", s.ID, s.Method)
-		}
+	if mutates(s.Method) && s.AuditAction == "" {
+		return fmt.Errorf("op: mutating operation %q (%s) declares no AuditAction", s.ID, s.Method)
 	}
 	return nil
+}
+
+func mutates(method string) bool {
+	switch method {
+	case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
+		return true
+	}
+	return false
 }
 
 func Register[I, O any](api huma.API, s Spec, h func(context.Context, *I) (*O, error)) error {
@@ -119,7 +124,7 @@ func (s Spec) documentedErrors() []int {
 	if !s.Public {
 		errs = append(errs, http.StatusUnauthorized)
 	}
-	if s.Permission != "" {
+	if s.Permission != "" || mutates(s.Method) {
 		errs = append(errs, http.StatusForbidden)
 	}
 	slices.Sort(errs)

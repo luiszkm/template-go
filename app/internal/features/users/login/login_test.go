@@ -190,9 +190,26 @@ func TestLogin_UnknownEmailVerifiesDummyHash(t *testing.T) {
 	h := userstest.Serve(t, pool, testkit.APIOptions{}, func(api huma.API, d deps.Deps) error {
 		return login.RegisterWithVerifier(api, d, verify)
 	})
+	hashes = nil
 
 	require.Equal(t, http.StatusUnauthorized, post(t, h, attempt{email: "nobody@x.com", password: pw}).Code)
 	require.Equal(t, []string{password.DummyHash()}, hashes)
+}
+
+func TestRegister_WarmsDummyHash(t *testing.T) {
+	pool := testkit.MigratedDB(t)
+	var hashes []string
+	verify := func(p, hash string) (bool, error) {
+		hashes = append(hashes, hash)
+		return password.Verify(p, hash)
+	}
+	h := userstest.Serve(t, pool, testkit.APIOptions{}, func(api huma.API, d deps.Deps) error {
+		return login.RegisterWithVerifier(api, d, verify)
+	})
+	require.Equal(t, []string{password.DummyHash()}, hashes, "registration verifies once against the dummy hash")
+
+	require.Equal(t, http.StatusUnauthorized, post(t, h, attempt{email: "nobody@x.com", password: pw}).Code)
+	require.Equal(t, []string{password.DummyHash(), password.DummyHash()}, hashes)
 }
 
 func TestLogin_InvalidBody422(t *testing.T) {

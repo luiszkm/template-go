@@ -123,3 +123,27 @@ func TestAuditEvents_AppendOnly(t *testing.T) {
 	require.ErrorContains(t, err, "append-only")
 	require.Equal(t, 1, count(t, pool, `SELECT count(*) FROM audit_events WHERE action = 'a'`))
 }
+
+func TestRecord_InvalidRequestIDReplaced(t *testing.T) {
+	pool := testkit.MigratedDB(t)
+	actor := testkit.SignIn(t, pool).ID
+	var recordErr error
+	h := httpx.RequestID(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		ctx := auth.WithPrincipal(r.Context(), auth.Principal{UserID: actor})
+		recordErr = db.WithTx(ctx, pool, func(tx pgx.Tx) error {
+			return audit.Record(ctx, tx, audit.Event{Action: "thing.changed", ResourceType: "thing", ResourceID: "t-24"})
+		})
+	}))
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/", nil)
+	req.Header.Set(httpx.HeaderRequestID, "a b")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	require.NoError(t, recordErr)
+
+	sent := rec.Header().Get(httpx.HeaderRequestID)
+	_, err := uuid.Parse(sent)
+	require.NoError(t, err, sent)
+	var stored string
+	require.NoError(t, pool.QueryRow(t.Context(), `SELECT request_id FROM audit_events WHERE resource_id = 't-24'`).Scan(&stored))
+	require.Equal(t, sent, stored)
+}

@@ -38,3 +38,12 @@ func TestTrustedProxies_Parse(t *testing.T) {
 	_, err = config.Load(map[string]string{"DATABASE_URL": "postgres://x", "TRUSTED_PROXIES": "nope"})
 	require.ErrorContains(t, err, "TRUSTED_PROXIES")
 }
+
+func TestDefaults_HardeningConfig(t *testing.T) {
+	cfg, err := config.Load(map[string]string{"DATABASE_URL": "postgres://x"})
+	require.NoError(t, err)
+	require.Equal(t, time.Hour, cfg.SessionSweepInterval)
+	require.Equal(t, 30*time.Second, cfg.HTTPReadTimeout)
+	require.Equal(t, 30*time.Second, cfg.HTTPWriteTimeout)
+	require.Equal(t, 120*time.Second, cfg.HTTPIdleTimeout)
+}

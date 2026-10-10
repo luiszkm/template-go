@@ -60,6 +60,9 @@ func RegisterWithVerifier(api huma.API, d deps.Deps, verify password.Verifier) e
 	if log == nil {
 		log = slog.New(slog.DiscardHandler)
 	}
+	if _, err := verify("", password.DummyHash()); err != nil {
+		return err
+	}
 	return op.Register(api, op.Spec{
 		ID:            "login",
 		Method:        http.MethodPost,

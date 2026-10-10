@@ -108,3 +108,15 @@ func TestAuditActions_SortedDistinct(t *testing.T) {
 	require.NoError(t, op.Register(api, op.Spec{ID: "read", Method: http.MethodGet, Path: "/read", Permission: "x:y"}, handler))
 	require.Equal(t, []string{"a.done", "b.done"}, op.AuditActions(api))
 }
+
+func TestDocumentedErrors_MutationsInclude403(t *testing.T) {
+	api := newAPI(t)
+	require.NoError(t, op.Register(api, op.Spec{ID: "public-post", Method: http.MethodPost, Path: "/things",
+		Public: true, AuditAction: "thing.created"}, handler))
+	require.NoError(t, op.Register(api, op.Spec{ID: "public-get", Method: http.MethodGet, Path: "/things", Public: true}, handler))
+
+	things := api.OpenAPI().Paths["/things"]
+	require.Contains(t, things.Post.Responses, "403")
+	require.NotContains(t, things.Get.Responses, "401")
+	require.NotContains(t, things.Get.Responses, "403")
+}
