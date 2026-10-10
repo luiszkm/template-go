@@ -75,8 +75,18 @@ func TestOpenAPI_MutationsDocument403(t *testing.T) {
 	require.Positive(t, mutations)
 }
 
+func logout(t *testing.T, h http.Handler, pool *pgxpool.Pool) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodDelete, "/api/v1/users/session", nil)
+	req.AddCookie(testkit.SignIn(t, pool).Cookie)
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	return rec
+}
+
 func TestSecurityHeaders_OnEveryResponse(t *testing.T) {
-	h := serverWith(t, testkit.MigratedDB(t), false)
+	pool := testkit.MigratedDB(t)
+	h := serverWith(t, pool, false)
 	cases := []struct {
 		name   string
 		rec    *httptest.ResponseRecorder
@@ -86,6 +96,7 @@ func TestSecurityHeaders_OnEveryResponse(t *testing.T) {
 		{"GET /api/does-not-exist", get(h, "/api/does-not-exist"), http.StatusNotFound},
 		{"GET /healthz", get(h, "/healthz"), http.StatusOK},
 		{"cross-site mutation", crossSiteLogin(t, h, "cross-site"), http.StatusForbidden},
+		{"DELETE /api/v1/users/session", logout(t, h, pool), http.StatusNoContent},
 	}
 	for _, c := range cases {
 		require.Equal(t, c.status, c.rec.Code, c.name)

@@ -5,7 +5,7 @@ Plan: `.specs/features/hardening/plan.md`
 
 ## Intent
 
-36 checks in 8 slices · 8 one-way doors · 0 open
+38 checks in 8 slices · 9 one-way doors · 0 open
 
 Comandos reais do repositório: `go -C app test <pkg> -run '<regex>'`, `task <name>` e `go -C app list`. Testes que
 tocam o banco usam `testkit.MigratedDB` (testcontainers, Postgres 17); nenhum banco é simulado. Um `auth.Querier`
@@ -30,13 +30,13 @@ passa a esperar o passo `vuln`. Nenhum outro membro dessas asserções muda.
 **C1** - A Huma operation whose handler returns `errors.New("pq: secret host=db user=app")` answers `500` `application/problem+json` with `detail` `internal server error`, no `errors` member, and a body that does not contain `secret` (HARD-01, AC 1, door 1) `[done]`
 Proof: `go -C app test ./internal/platform/httpx -run '^TestProblem_5xxHidesCause$'`
 
-**C2** - `huma.Error500InternalServerError("x", errors.New("secret"))`, `huma.Error503ServiceUnavailable("x", errors.New("secret"))` and `huma.Error502BadGateway("x", errors.New("secret"))` returned by handlers each produce a body with no `errors` member and without `secret` (HARD-01, AC 2, door 1) `[done]`
+**C2** - `huma.Error500InternalServerError("x", errors.New("secret"))`, `huma.Error503ServiceUnavailable("x", errors.New("secret"))` and `huma.Error502BadGateway("x", errors.New("secret"))` returned by handlers each produce a body with no `errors` member and without `secret`; the `500` reads `detail` `internal server error` and the `502` and `503` keep the handler's `detail` `x` (HARD-01, AC 1, AC 2, door 1) `[done]`
 Proof: `go -C app test ./internal/platform/httpx -run '^TestProblem_No5xxCarriesErrors$'`
 
 **C3** - For the C1 request, the access log has exactly one entry; it has `level` `ERROR`, `status` `500`, `request_id` equal to the response `X-Request-ID`, and `error` equal to `pq: secret host=db user=app` (HARD-01, AC 3, door 1) `[done]`
 Proof: `go -C app test ./internal/platform/httpx -run '^TestAccessLog_5xxLogsCauseAtError$'`
 
-**C4** - A handler returning `huma.Error503ServiceUnavailable("db down")` yields one access log entry with `level` `ERROR` and no `error` key (HARD-01, AC 4) `[done]`
+**C4** - A handler returning `huma.Error503ServiceUnavailable("db down")` answers `detail` `db down` and yields one access log entry with `level` `ERROR` and no `error` key (HARD-01, AC 4) `[done]`
 Proof: `go -C app test ./internal/platform/httpx -run '^TestAccessLog_5xxWithoutCause$'`
 
 **C5** - A `404` and a `422` (body failing a `minLength` validation) each yield an access log entry with `level` `INFO` and no `error` key; the `422` body keeps one `errors` entry with its `location` (HARD-01, AC 5) `[done]`
@@ -44,6 +44,12 @@ Proof: `go -C app test ./internal/platform/httpx -run '^TestAccessLog_Below500Is
 
 **C6** - With a `Querier` around the real pool whose `QueryRow` fails, a request carrying a session cookie to an `Authenticated` operation answers `500` with `detail` `internal server error` and no `errors`, and the access log entry has `level` `ERROR` with the injected error text in `error` (HARD-01, AC 6, door 1) `[done]`
 Proof: `go -C app test ./internal/platform/auth -run '^TestMiddleware_LookupFailure500Logged$'`
+
+**C37** - A panicking handler behind the full chain yields exactly one access log entry with `level` `ERROR`, `error` `panic: boom` and a `stack` attribute containing `goroutine`, while the response body contains no `goroutine` (HARD-01, AC 3, door 1; foundation C14) `[done]`
+Proof: `go -C app test ./internal/platform/httpx -run '^TestAccessLog_PanicCarriesCauseAndStack$'`
+
+**C38** - `httpx.Recover` used without `AccessLog` logs its own entry with `msg` `panic`, `panic` `boom` and a `stack` containing `goroutine`, and answers `500` (HARD-01, AC 3, door 1) `[done]`
+Proof: `go -C app test ./internal/platform/httpx -run '^TestRecover_LogsPanicWithoutAccessLog$'`
 
 ### S2 - Mutação de outra origem recusada · ~5 files · ~25 KB · ~7k
 
@@ -79,7 +85,7 @@ Proof: `go -C app test ./cmd/api -run '^TestServe_InvalidDurationExits1$'`
 
 ### S4 - Cabeçalhos de segurança · ~4 files · ~25 KB · ~7k
 
-**C16** - Through `app.New`, responses to `GET /` (200), `GET /api/does-not-exist` (404), `GET /healthz` (200) and a `POST /api/v1/users/session` with `Sec-Fetch-Site: cross-site` (403) each carry `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY` and `Referrer-Policy: strict-origin-when-cross-origin` (HARD-04, AC 14, door 3) `[done]`
+**C16** - Through `app.New`, responses to `GET /` (200), `GET /api/does-not-exist` (404), `GET /healthz` (200) and a `POST /api/v1/users/session` with `Sec-Fetch-Site: cross-site` (403) and a `DELETE /api/v1/users/session` with a valid session (204) each carry `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY` and `Referrer-Policy: strict-origin-when-cross-origin` (HARD-04, AC 14, door 3) `[done]`
 Proof: `go -C app test ./internal/app -run '^TestSecurityHeaders_OnEveryResponse$'`
 
 **C17** - A `500` produced by a panicking handler carries the three AC 14 headers (HARD-04, AC 14) `[done]`
@@ -124,6 +130,7 @@ Proof: `go -C app test ./internal/platform/auth -run '^TestSweepSessions_Returns
 
 **C29** - `api serve` started against a database holding a session created `2 hours` ago with `SESSION_TTL=1h` deletes it within 5s of answering `/healthz`, keeps a fresh session, and exits `0` on cancel (HARD-06, AC 22, AC 25) `[done]`
 Proof: `go -C app test ./cmd/api -run '^TestServe_SweepsExpiredSessions$'`
+Proof: `go -C app test ./internal/platform/config -run '^TestDefaults_HardeningConfig$'` (default `SESSION_SWEEP_INTERVAL` `1h`)
 
 ### S7 - Dependências e gate · ~4 files · ~10 KB · ~3k
 
@@ -160,8 +167,10 @@ Proof: `go -C app test ./internal/platform/auth -run '^TestMiddleware_Forbids403
 | --- | --- | --- |
 | `POST`/`PUT`/`PATCH`/`DELETE /api/v1/*` statuses (2) | 403 C7 · C8 · C9 · processed normally C9 · C10 | - |
 | qualquer rota da API - status `500` (1) | 500 C1 · C6 | - |
-| qualquer rota - statuses sampled for headers (4) | 200 C16 · 204 C21 · 404 C16 · 500 C17 | - |
-| erro 5xx por origem (4) | handler plain error C1 · huma 5xx with cause C2 · huma 5xx without cause C4 · auth lookup failure C6 | - |
+| qualquer rota - statuses sampled for headers (4) | 200 C16 · 204 C16 · 404 C16 · 500 C17 | - |
+| erro 5xx por origem (5) | handler plain error C1 · huma 5xx with cause C2 · huma 5xx without cause C4 · auth lookup failure C6 · panic C37 | - |
+| `detail` of 5xx (2) | `500` replaced by `internal server error` C1 · C2 · `502`/`503` keep the caller's detail C2 · C4 | - |
+| panic log destination (2) | access log line with `error`+`stack` C37 · standalone `Recover` line C38 | - |
 | nível do log de acesso (3) | `>= 500` with cause C3 · `>= 500` without cause C4 · `< 500` C5 | - |
 | `Sec-Fetch-Site` values on unsafe methods (5) | `cross-site` C7 · `same-site` C7 · `same-origin` C10 · `none` C10 · absent C9 · C10 | - |
 | `Origin` when `Sec-Fetch-Site` absent (3) | mismatched host C9 · matching host C9 · absent C10 | - |
@@ -179,7 +188,7 @@ Proof: `go -C app test ./internal/platform/auth -run '^TestMiddleware_Forbids403
 | `db.Open` callers (2) | `serve` C32 · `create-admin` C33 | - |
 | `auth.Lookup` outcomes (3) | user with permissions C35 · user without roles C36 · unknown/expired/deactivated session C36 | - |
 | startup assembly of middleware chain (3 places) | `app.New` C7 · C16 · `testkit.NewAPI` C6 · `testkit.NewAPIWithoutDatabase` existing `TestMiddleware_NoDatabase503` - all three call the one `httpx` function | - |
-| doors (8) | 1 C1 · C3 · 2 C7 · C12 · 3 C16 · C18 · 4 C14 · C15 · 5 C22 · C23 · 6 C25 · C35 · 7 C30 · C31 · 8 C32 · C33 | - |
+| doors (9) | 1 C1 · C3 · 2 C7 · C12 · 3 C16 · C18 · 4 C14 · C15 · 5 C22 · C23 · 6 C25 · C35 · 7 C30 · C31 · 8 C32 · C33 · 9 C31 (`task vuln` exit 0 at `go 1.26.9`) | - |
 
 - Claims naming a status code, route or response shape: C1, C2, C6, C7, C8, C9, C12, C16, C18, C19, C20, C21 - each proof crosses the HTTP boundary through a real handler chain
 - C7, C12, C16, C18-C21 cross `app.New`, the production assembly; the `httpx`-level proofs C8-C11 prove the decision table at its own layer
@@ -211,3 +220,4 @@ Intended split, with the arithmetic, written before any code:
 - S1-S8 ≈ 50k somados (~34 arquivos, a maioria pequena em `platform/httpx`, `platform/auth`, `cmd/api`, `internal/app`) - abaixo do budget de 150k -> um único builder, sem handoff
 
 - **Settled mid-build:** C30 corrigido antes de ficar verde: `otelhttp` permanece em `app/go.mod` como `// indirect` porque `testcontainers-go` (só testes) o importa; o claim passou de "nenhuma linha `require`" para "nenhum `require` direto". AC 26 (o binário não linka `go.opentelemetry.io/`) não muda. C26 reescrito para o tempo que o teste realmente mede (início com intervalo de 1h, em vez de 15ms). Door 9 acrescentada: o primeiro `task vuln` falhou com 23 vulnerabilidades da stdlib 1.26.2 e uma em `moby/go-archive`.
+- **Verification round 1 (FAIL) fixes:** C2/C4 passam a afirmar o `detail` de 502/503; C16 cobre um `204`; C37/C38 acrescentados para os dois ramos do log de pânico; coverage ganha a door 9 e o default de `SESSION_SWEEP_INTERVAL` (C29).

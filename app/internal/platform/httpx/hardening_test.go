@@ -113,8 +113,14 @@ func TestProblem_No5xxCarriesErrors(t *testing.T) {
 	for path, status := range map[string]int{"/api/e500": 500, "/api/e502": 502, "/api/e503": 503} {
 		rec := send(e.h, http.MethodGet, path, nil, "")
 		require.Equal(t, status, rec.Code, path)
-		require.NotContains(t, problemOf(t, rec), "errors", path)
+		body := problemOf(t, rec)
+		require.NotContains(t, body, "errors", path)
 		require.NotContains(t, rec.Body.String(), "secret", path)
+		if status == 500 {
+			require.Equal(t, "internal server error", body["detail"], path)
+		} else {
+			require.Equal(t, "x", body["detail"], "%s keeps the caller's detail", path)
+		}
 	}
 }
 
@@ -130,7 +136,9 @@ func TestAccessLog_5xxLogsCauseAtError(t *testing.T) {
 
 func TestAccessLog_5xxWithoutCause(t *testing.T) {
 	e := wrapped(t, false)
-	require.Equal(t, http.StatusServiceUnavailable, send(e.h, http.MethodGet, "/api/down", nil, "").Code)
+	rec := send(e.h, http.MethodGet, "/api/down", nil, "")
+	require.Equal(t, http.StatusServiceUnavailable, rec.Code)
+	require.Equal(t, "db down", problemOf(t, rec)["detail"])
 	entry := onlyEntry(t, e.log)
 	require.Equal(t, "ERROR", entry["level"])
 	require.NotContains(t, entry, "error")
@@ -234,4 +242,31 @@ func decode(t *testing.T, raw []byte) map[string]any {
 	var m map[string]any
 	require.NoError(t, json.Unmarshal(raw, &m), string(raw))
 	return m
+}
+
+func TestAccessLog_PanicCarriesCauseAndStack(t *testing.T) {
+	e := wrapped(t, false)
+	rec := send(e.h, http.MethodGet, "/api/panic", nil, "")
+	require.Equal(t, http.StatusInternalServerError, rec.Code)
+	entry := onlyEntry(t, e.log)
+	require.Equal(t, "ERROR", entry["level"])
+	require.Equal(t, "panic: boom", entry["error"])
+	stack, ok := entry["stack"].(string)
+	require.True(t, ok, "stack attribute missing: %v", entry)
+	require.Contains(t, stack, "goroutine")
+	require.NotContains(t, rec.Body.String(), "goroutine")
+}
+
+func TestRecover_LogsPanicWithoutAccessLog(t *testing.T) {
+	buf := &logBuf{}
+	h := httpx.Recover(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { panic("boom") }),
+		slog.New(slog.NewJSONHandler(buf, nil)))
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/panic", nil))
+	require.Equal(t, http.StatusInternalServerError, rec.Code)
+	entry := onlyEntry(t, buf)
+	require.Equal(t, "ERROR", entry["level"])
+	require.Equal(t, "panic", entry["msg"])
+	require.Equal(t, "boom", entry["panic"])
+	require.Contains(t, entry["stack"], "goroutine")
 }
