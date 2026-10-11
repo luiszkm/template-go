@@ -16,6 +16,7 @@
 | AD-010 | Spec workflow is `tlc-spec-lean` with `profile: standard` | catches unproven set members and tests that pass under a wrong implementation | active | 2026-10-07 |
 | AD-011 | Code carries no comments; only machine-read annotations (`//go:`, `//nolint:`, `-- +goose`, sqlc `-- name:`, generator markers, `biome-ignore`) | code must explain itself through names and shape; comments drift from the code and an LLM trusts them; enforced by `archtest.CheckComments` (2026-10-08) | active | 2026-10-08 |
 | AD-012 | Periodic background work runs in-process: a blocking `func(ctx, ...)` loop started by `cmd/api serve` in a goroutine bound to the serve context, run once at start and then on a ticker, awaited before `serve` returns; each run is an idempotent statement so every replica may run it (first: `auth.SweepSessions`) | no new process, extension or queue for a periodic `DELETE`; rejected `pg_cron` (extension not in the template's Postgres) and leader election (unneeded for idempotent work) | active | 2026-10-09 |
+| AD-013 | Copyright Luis Soares (2026). The repository is licensed under the PolyForm Noncommercial License 1.0.0 (`LICENSE`, SPDX `PolyForm-Noncommercial-1.0.0`). Only noncommercial purposes are permitted. `task rename` does not rewrite the copyright notice or the license | the author asked for public source that forbids commercial use; an OSI license cannot do that, so the grant is PolyForm Noncommercial | active | 2026-10-11 |
 
 ## Handoff
 

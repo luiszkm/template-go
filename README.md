@@ -94,3 +94,10 @@ docker compose --profile app up --build
 O serviço `migrate` roda `api migrate up` e termina. O `app` sobe em seguida.
 Para criar o admin a partir da máquina, use `localhost` na `DATABASE_URL`, como
 no comando acima. Dentro da rede do Compose o host do banco é `db`.
+
+## Licença
+
+Copyright (c) 2026 Luis Soares. Uso, cópia, modificação e distribuição só para
+fins não comerciais, nos termos da PolyForm Noncommercial License 1.0.0. O
+texto está em `LICENSE`. Uso comercial não está concedido. `task rename` não
+altera o aviso de copyright nem esta licença.
