@@ -15,6 +15,16 @@ services:
       timeout: 3s
       retries: 30
 
+  migrate:
+    build: .
+    profiles: [app]
+    environment:
+      DATABASE_URL: postgres://app:app@db:5432/app?sslmode=disable
+    command: ["migrate", "up"]
+    depends_on:
+      db:
+        condition: service_healthy
+
   app:
     build: .
     profiles: [app]
@@ -26,6 +36,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   db-data:
