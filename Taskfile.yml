@@ -47,7 +47,7 @@ tasks:
     desc: golangci-lint over the Go module.
     dir: app
     cmds:
-      - "{{.GOTOOL}} golangci-lint run ./..."
+      - "{{.GOTOOL}} golangci-lint run --allow-serial-runners ./..."
 
   vuln:
     desc: Known-vulnerability scan of the Go module (needs network for vuln.go.dev).
